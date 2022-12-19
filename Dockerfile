@@ -3,6 +3,6 @@ FROM node:19.3-slim
 WORKDIR /app
 COPY . .
 
-WORKDIR /app/dal
+WORKDIR /app/server/dal
 RUN npm i
-ENTRYPOINT ./scripts init
+ENTRYPOINT ./cmd init

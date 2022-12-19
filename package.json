@@ -1,19 +1,27 @@
 {
-  "scripts": {
-    "dev": "next dev",
-    "build": "next build",
-    "start": "next start",
-    "lint": "next lint"
-  },
   "dependencies": {
+    "@types/express": "^4.17.15",
+    "@types/node": "18.11.15",
+    "@types/passport": "^1.0.11",
+    "@types/passport-jwt": "^3.0.8",
     "@types/react": "18.0.26",
     "@types/react-dom": "18.0.9",
+    "body-parser": "^1.20.1",
+    "cors": "^2.8.5",
     "mobx": "^6.7.0",
     "mobx-react": "^7.6.0",
     "next": "13.0.6",
+    "next-auth": "^4.18.6",
+    "passport": "^0.6.0",
+    "passport-jwt": "^4.0.0",
     "react": "18.2.0",
     "react-dom": "18.2.0",
+    "socket.io": "^4.5.4",
     "socket.io-client": "^4.5.4",
+    "swc-node": "^1.0.0",
     "typescript": "4.9.4"
+  },
+  "devDependencies": {
+    "@swc-node/register": "^1.5.4"
   }
 }
