@@ -12,24 +12,11 @@ const handle = staticServer.getRequestHandler()
 const app = express()
 
 import SocketIO from 'socket.io'
-import { ExtendedError } from 'socket.io/dist/namespace'
 import { middlewares } from './services'
 
-const makeMidleware = (middleware: RequestHandler<any, any>) =>
-  ({ request, handshake }: any, next: (err?: ExtendedError) => void) =>
-    middleware(handshake || request, {} as any, next as any)
-
-// Body Parser middleware to parse request bodies
-app.use(
-  bodyParser.urlencoded({
-    extended: false,
-  })
-)
-
+app.use(bodyParser.urlencoded({ extended: false }))
 app.use(bodyParser.json())
 app.use(cors())
-
-app.use(middlewares.auth)
 
 // Assign socket object to every request
 app.use(function (req, res, next) {
@@ -38,14 +25,20 @@ app.use(function (req, res, next) {
 })
 
 import login from './api/login'
+import messages from './api/messages'
+import users from './api/users'
 
 app.use('/api/login', login)
-app.all("*", (req: any, res: any) => {
-  return handle(req, res)
-})
+app.use('/api/messages', middlewares.auth, messages)
+app.use('/api/users', middlewares.auth, users)
+app.all("*", (req: any, res: any) => handle(req, res))
 
 const port = Number() || 3000
 let io: SocketIO.Server
+
+const makeMidleware = (middleware: RequestHandler<any, any>) =>
+  ({ request, handshake }: any, next: (err?: any) => void) =>
+    middleware(handshake || request, {} as any, next as any)
 
 staticServer
   .prepare()

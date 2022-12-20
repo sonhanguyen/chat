@@ -1,44 +1,44 @@
-import { type Knex } from 'knex'
 
 // @ts-ignore knex cli complains here for whatever reason
 import { User } from 'zapatos/schema'
+import { db as database } from '../knexfile'
 
-const SelectedUser = ({ password, ...user }: User.Selectable) =>
+const User = ({ password, ...user }: User.Selectable) =>
   user as Omit<User.Selectable, 'password'>
 
-export type User = ReturnType<typeof SelectedUser>
+export type User = ReturnType<typeof User>
 
-export default class UserRepo {
-  static TABLE = 'User'
+export default class Users {
+  static TABLE: User.Table = 'User'
 
   constructor(
-    private db: Knex = require('./knexfile')
+    private db = database()
   ) { }
 
   async all() {
-    const { rows } = await this.db.raw(`SELECT * FROM "${UserRepo.TABLE}"`)
+    const { rows } = await this.db.raw(`SELECT * FROM "${Users.TABLE}"`)
     
-    return rows.map(SelectedUser)
+    return rows.map(User)
   }
 
   async byId(id: string) {
     const { rows: [ user ] } = await this.db.raw(`
-      SELECT * FROM "${UserRepo.TABLE}" WHERE id = ?
+      SELECT * FROM "${Users.TABLE}" WHERE id = ?
     `, [ id ])
 
-    if (user) return SelectedUser(user)
+    if (user) return User(user)
   }
 
   async byCredential(username: string, password: string) {
     const { rows: [ user ] } = await this.db.raw(`
       SELECT *, (password = crypt(:password, password)) AS match
-      FROM "${UserRepo.TABLE}"
+      FROM "${Users.TABLE}"
       WHERE username = :username
     `, { username, password })
 
     if (user?.match) {
       delete user.match
-      return SelectedUser(user)
+      return User(user)
     }
   }
 
@@ -48,7 +48,7 @@ export default class UserRepo {
     password: string
   ) {
     const created = await this.db.raw(`
-      INSERT INTO "${UserRepo.TABLE}" (
+      INSERT INTO "${Users.TABLE}" (
         name, username, password
       )
       VALUES (
@@ -57,6 +57,6 @@ export default class UserRepo {
       RETURNING *
     `, [ name, username, password ])
 
-    return SelectedUser(created)
+    return User(created)
   }
 }

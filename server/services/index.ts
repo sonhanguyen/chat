@@ -1,19 +1,14 @@
 import config from '../config'
-import UserRepo from '../dal/UserRepo'
-import { makeMidddware as makeAuthMiddleware } from './auth'
+import Messages from '../dal/entities/Messages'
+import Users from '../dal/entities/Users'
+import { makeMiddleware as makeAuthenticator } from './auth'
 
-export const userRepo = new UserRepo
-
-const services = {
-  userRepo
-}
-
-export default services
-export type Services = typeof services
+export const users = new Users
+export const messages = new Messages
 
 export const middlewares = {
-  auth: makeAuthMiddleware(
-    (id: string) => userRepo.byId(id),
+  auth: makeAuthenticator(
+    (id: string) => users.byId(id),
     config.jwtKey
   )
 }

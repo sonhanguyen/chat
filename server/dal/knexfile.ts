@@ -38,7 +38,7 @@ for (const key in env) {
 }
 
 export const db = Object.assign(
-  () => knex({ client, connection }),
+  (): Knex => knex({ client, connection }),
   connection
 )
 

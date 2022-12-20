@@ -4,7 +4,6 @@
  */
 exports.up = knex => knex.raw(`
   CREATE EXTENSION IF NOT EXISTS pgcrypto;
-
   CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
 
   CREATE TABLE IF NOT EXISTS "User" (
@@ -16,10 +15,10 @@ exports.up = knex => knex.raw(`
 
   CREATE TABLE IF NOT EXISTS "Message" (
     id UUID DEFAULT uuid_generate_v4 () PRIMARY KEY,
-    name TEXT NOT NULL,
-    sender UUID REFERENCES "User",
-    receiver UUID REFERENCES "User",
-    body TEXT
+    utc_time TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc', now()) NOT NULL,
+    sender UUID REFERENCES "User" NOT NULL,
+    receiver UUID REFERENCES "User" NOT NULL,
+    body TEXT NOT NULL
   );
 `)
 
@@ -28,5 +27,6 @@ exports.up = knex => knex.raw(`
  * @returns { Promise<void> }
  */
 exports.down = async knex => knex.raw(`
+  DROP TABLE IF EXISTS "Message";
   DROP TABLE IF EXISTS "User";
 `)

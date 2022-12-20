@@ -1,20 +1,24 @@
 import { api } from '../client/services'
 import React from 'react'
 
-const createHandler = (login: typeof api['login']) =>
+const createHandler = ({ 
+  onLoggedIn,
+  login
+}: Props) =>
   (evt: React.FormEvent<HTMLFormElement> & { target: HTMLFormElement }) => {
     evt.preventDefault()
     const cred = Object.fromEntries(new FormData(evt.target))
     
-    login(cred as any).then(console.log)
+    login(cred as any).then(onLoggedIn)
   }
 
 type Props = {
   login: typeof api['login']
+  onLoggedIn(): void
 }
 
-const Login: React.FunctionComponent<Props> = ({ login }) => {
-  return <form onSubmit={createHandler(login)}>
+const Login: React.FunctionComponent<Props> = (props) => {
+  return <form onSubmit={createHandler(props)}>
     <input name='username' />
     <input type='password' name='password' />
     <button>Login</button>
@@ -22,6 +26,7 @@ const Login: React.FunctionComponent<Props> = ({ login }) => {
 }
 
 Login.defaultProps = {
+  onLoggedIn: () => location.href = '/',
   login: api.login
 }
 

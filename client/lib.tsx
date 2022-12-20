@@ -3,13 +3,13 @@ import React from 'react'
 type OK<T> = { result: T }
 type Error<T> = { error: T }
 
-type Pending = { pending: true }
+type Pending<T> = { pending: Promise<T> }
 type Resolved = {
   reset(): void
 }
 
 /**
- * @param action: an async function
+ * @param func: an async function
  * @returns same function with extra states (`error`, `result`, `pending`) that are bound to react render cycle
  * 
  * basically poor man's `react-query`, which is not used here because I think consuming api 
@@ -18,34 +18,35 @@ type Resolved = {
  */
 export const useAction = <
   F extends (..._: any) => Promise<any>,
-  E = any
->(action: F): F & Readonly<Resolved & Partial<
-  OK<F extends () => Promise<infer R> ? R : ReturnType<F>>
+  E = any,
+  R = F extends () => Promise<infer R> ? R : ReturnType<F>
+>(func: F, onMount?: boolean): F & Readonly<Resolved & Partial<
+  OK<R>
   & Error<E>
-  & Pending
+  & Pending<R>
 >> => {
   type State = ReturnType<typeof useAction>
-  const make = (): State => {
-    const initial: Partial<State> = (async (...args: Parameters<F>) => {
-      const pendingState = Object.assign(make(), { pending: true })
-      setState((_: State) => pendingState)
+  const make = (pending?: Promise<R>): State => {
+    const initial: F = (async (...args: Parameters<F>) => {
+      const promise = func(...args)
+      setActionState((_: State) => make(promise))
       // passing the function form of SetStateAction to `setState` is required, b/c state here is a
       // function (has the type F), so if passed as value to setState, react will think we're using
       // said function form of `SetStateAction`, and call it, which is not what we want
       // (we're just setting state, not calling the function that state happens to be)
-
       const resolvedState = make()
       try {
-        const result = await action(...args)
-        Object.assign(resolvedState, { result })
+        Object.assign(resolvedState, { result: await promise })
       } catch (error) {
         Object.assign(resolvedState, { error })
       }
-      setState((_: State) => resolvedState)
+
+      setActionState((_: State) => resolvedState)
     }) as any
     
     Object.assign(initial, {
-      reset: () => setState((state: State) => {
+      pending,
+      reset: () => setActionState((state: State) => {
         if (state.pending || 'error' in state) return make()
         return state
       })
@@ -54,9 +55,10 @@ export const useAction = <
     return initial as any
   }
 
-  const [state, setState] = React.useState(make)
+  const [action, setActionState] = React.useState(make)
+  React.useEffect(() => { if (onMount) action() }, [])
 
-  return state as any
+  return action as any
 }
 
 import { useRouter } from 'next/router'

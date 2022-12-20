@@ -6,6 +6,6 @@ services:
     env_file: .env
   web:
     environment:
-      - DB_HOST: db
+      - DB_HOST=db
     build:
       dockerfile: Dockerfile 

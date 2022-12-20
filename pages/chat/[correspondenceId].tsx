@@ -4,7 +4,7 @@ import React from 'react'
 
 import { useAction, withDefaults, withNextJsRouteQuery } from '../../client/lib'
 import { api, wsClient } from '../../client/services'
-  
+import { Message as Msg } from '../../client/services/Api'
 
 type ConversationProps = {
   messages: Message[]
@@ -14,7 +14,7 @@ type ConversationProps = {
 type Message = {
   id: string
   body: string
-  timestamp: number
+  timestamp: Date
   sender: {
     isMe?: boolean
     name: string
@@ -100,16 +100,14 @@ type RouteProps = {
 }
 
 const makeDefaultProps = ({ correspondenceId: userId }: RouteProps): ChatProps => {
-  const mapMessage = ({ body, from, date, _id }: {
-    date: number
-  } & Record<'body' | 'from' | '_id', string>) => (
+  const mapMessage = ({ body, sender, timestamp, id }: Msg) => (
     {
-      id: _id,
+      id,
       body,
-      timestamp: date,
+      timestamp,
       sender: {
         name: 'name',
-        isMe: userId !== from
+        isMe: userId != sender
       }
     }
   )

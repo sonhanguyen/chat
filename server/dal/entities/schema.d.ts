@@ -36,29 +36,29 @@ declare module 'zapatos/schema' {
       */
       id: string;
       /**
-      * **Message.name**
-      * - `text` in database
-      * - `NOT NULL`, no default
+      * **Message.utc_time**
+      * - `timestamptz` in database
+      * - `NOT NULL`, default: `timezone('utc'::text, now())`
       */
-      name: string;
+      utc_time: Date;
       /**
       * **Message.sender**
       * - `uuid` in database
-      * - Nullable, no default
+      * - `NOT NULL`, no default
       */
-      sender: string | null;
+      sender: string;
       /**
       * **Message.receiver**
       * - `uuid` in database
-      * - Nullable, no default
+      * - `NOT NULL`, no default
       */
-      receiver: string | null;
+      receiver: string;
       /**
       * **Message.body**
       * - `text` in database
-      * - Nullable, no default
+      * - `NOT NULL`, no default
       */
-      body: string | null;
+      body: string;
     }
     export interface JSONSelectable {
       /**
@@ -68,29 +68,29 @@ declare module 'zapatos/schema' {
       */
       id: string;
       /**
-      * **Message.name**
-      * - `text` in database
-      * - `NOT NULL`, no default
+      * **Message.utc_time**
+      * - `timestamptz` in database
+      * - `NOT NULL`, default: `timezone('utc'::text, now())`
       */
-      name: string;
+      utc_time: db.TimestampTzString;
       /**
       * **Message.sender**
       * - `uuid` in database
-      * - Nullable, no default
+      * - `NOT NULL`, no default
       */
-      sender: string | null;
+      sender: string;
       /**
       * **Message.receiver**
       * - `uuid` in database
-      * - Nullable, no default
+      * - `NOT NULL`, no default
       */
-      receiver: string | null;
+      receiver: string;
       /**
       * **Message.body**
       * - `text` in database
-      * - Nullable, no default
+      * - `NOT NULL`, no default
       */
-      body: string | null;
+      body: string;
     }
     export interface Whereable {
       /**
@@ -100,27 +100,27 @@ declare module 'zapatos/schema' {
       */
       id?: string | db.Parameter<string> | db.SQLFragment | db.ParentColumn | db.SQLFragment<any, string | db.Parameter<string> | db.SQLFragment | db.ParentColumn>;
       /**
-      * **Message.name**
-      * - `text` in database
-      * - `NOT NULL`, no default
+      * **Message.utc_time**
+      * - `timestamptz` in database
+      * - `NOT NULL`, default: `timezone('utc'::text, now())`
       */
-      name?: string | db.Parameter<string> | db.SQLFragment | db.ParentColumn | db.SQLFragment<any, string | db.Parameter<string> | db.SQLFragment | db.ParentColumn>;
+      utc_time?: (db.TimestampTzString | Date) | db.Parameter<(db.TimestampTzString | Date)> | db.SQLFragment | db.ParentColumn | db.SQLFragment<any, (db.TimestampTzString | Date) | db.Parameter<(db.TimestampTzString | Date)> | db.SQLFragment | db.ParentColumn>;
       /**
       * **Message.sender**
       * - `uuid` in database
-      * - Nullable, no default
+      * - `NOT NULL`, no default
       */
       sender?: string | db.Parameter<string> | db.SQLFragment | db.ParentColumn | db.SQLFragment<any, string | db.Parameter<string> | db.SQLFragment | db.ParentColumn>;
       /**
       * **Message.receiver**
       * - `uuid` in database
-      * - Nullable, no default
+      * - `NOT NULL`, no default
       */
       receiver?: string | db.Parameter<string> | db.SQLFragment | db.ParentColumn | db.SQLFragment<any, string | db.Parameter<string> | db.SQLFragment | db.ParentColumn>;
       /**
       * **Message.body**
       * - `text` in database
-      * - Nullable, no default
+      * - `NOT NULL`, no default
       */
       body?: string | db.Parameter<string> | db.SQLFragment | db.ParentColumn | db.SQLFragment<any, string | db.Parameter<string> | db.SQLFragment | db.ParentColumn>;
     }
@@ -132,29 +132,29 @@ declare module 'zapatos/schema' {
       */
       id?: string | db.Parameter<string> | db.DefaultType | db.SQLFragment;
       /**
-      * **Message.name**
-      * - `text` in database
-      * - `NOT NULL`, no default
+      * **Message.utc_time**
+      * - `timestamptz` in database
+      * - `NOT NULL`, default: `timezone('utc'::text, now())`
       */
-      name: string | db.Parameter<string> | db.SQLFragment;
+      utc_time?: (db.TimestampTzString | Date) | db.Parameter<(db.TimestampTzString | Date)> | db.DefaultType | db.SQLFragment;
       /**
       * **Message.sender**
       * - `uuid` in database
-      * - Nullable, no default
+      * - `NOT NULL`, no default
       */
-      sender?: string | db.Parameter<string> | null | db.DefaultType | db.SQLFragment;
+      sender: string | db.Parameter<string> | db.SQLFragment;
       /**
       * **Message.receiver**
       * - `uuid` in database
-      * - Nullable, no default
+      * - `NOT NULL`, no default
       */
-      receiver?: string | db.Parameter<string> | null | db.DefaultType | db.SQLFragment;
+      receiver: string | db.Parameter<string> | db.SQLFragment;
       /**
       * **Message.body**
       * - `text` in database
-      * - Nullable, no default
+      * - `NOT NULL`, no default
       */
-      body?: string | db.Parameter<string> | null | db.DefaultType | db.SQLFragment;
+      body: string | db.Parameter<string> | db.SQLFragment;
     }
     export interface Updatable {
       /**
@@ -164,29 +164,29 @@ declare module 'zapatos/schema' {
       */
       id?: string | db.Parameter<string> | db.DefaultType | db.SQLFragment | db.SQLFragment<any, string | db.Parameter<string> | db.DefaultType | db.SQLFragment>;
       /**
-      * **Message.name**
-      * - `text` in database
-      * - `NOT NULL`, no default
+      * **Message.utc_time**
+      * - `timestamptz` in database
+      * - `NOT NULL`, default: `timezone('utc'::text, now())`
       */
-      name?: string | db.Parameter<string> | db.SQLFragment | db.SQLFragment<any, string | db.Parameter<string> | db.SQLFragment>;
+      utc_time?: (db.TimestampTzString | Date) | db.Parameter<(db.TimestampTzString | Date)> | db.DefaultType | db.SQLFragment | db.SQLFragment<any, (db.TimestampTzString | Date) | db.Parameter<(db.TimestampTzString | Date)> | db.DefaultType | db.SQLFragment>;
       /**
       * **Message.sender**
       * - `uuid` in database
-      * - Nullable, no default
+      * - `NOT NULL`, no default
       */
-      sender?: string | db.Parameter<string> | null | db.DefaultType | db.SQLFragment | db.SQLFragment<any, string | db.Parameter<string> | null | db.DefaultType | db.SQLFragment>;
+      sender?: string | db.Parameter<string> | db.SQLFragment | db.SQLFragment<any, string | db.Parameter<string> | db.SQLFragment>;
       /**
       * **Message.receiver**
       * - `uuid` in database
-      * - Nullable, no default
+      * - `NOT NULL`, no default
       */
-      receiver?: string | db.Parameter<string> | null | db.DefaultType | db.SQLFragment | db.SQLFragment<any, string | db.Parameter<string> | null | db.DefaultType | db.SQLFragment>;
+      receiver?: string | db.Parameter<string> | db.SQLFragment | db.SQLFragment<any, string | db.Parameter<string> | db.SQLFragment>;
       /**
       * **Message.body**
       * - `text` in database
-      * - Nullable, no default
+      * - `NOT NULL`, no default
       */
-      body?: string | db.Parameter<string> | null | db.DefaultType | db.SQLFragment | db.SQLFragment<any, string | db.Parameter<string> | null | db.DefaultType | db.SQLFragment>;
+      body?: string | db.Parameter<string> | db.SQLFragment | db.SQLFragment<any, string | db.Parameter<string> | db.SQLFragment>;
     }
     export type UniqueIndex = 'Message_pkey';
     export type Column = keyof Selectable;

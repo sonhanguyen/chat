@@ -1,23 +1,23 @@
 import HttpService from './HttpService';
+import { Message } from '../../server/dal/entities/Messages';
+
+export type { Message }
 
 export type AuthData = {
   token: string
+  id: string
   name: string
 }
 
-export type Message = {
-  _id: string
-  to: string
-  from: string
-  body: string
-  date: number
-}
-
 export default class Api {
+  users: UserStore
+
   constructor(
     readonly http: HttpService,
     private saveAuthData: (_: AuthData) => void
-  ) {}
+  ) {
+    this.users = new UserStore(http)
+  }
 
   login = async (cred: { username: string, password: string }) => {
     const authData = await this.http.fetch<AuthData>(
@@ -34,7 +34,7 @@ export default class Api {
   }
 
   loadChatHistory = async (userId: string, timestamp?: string, limit = 10) => {
-    return this.http.fetch<Message[]>(`/api/messages/conversations/query?userId=${userId}`)
+    return this.http.fetch<Message[]>('/api/messages/' + userId)
   }
 
   send = async (to: string, body: string) => {
@@ -50,6 +50,17 @@ import io, { Socket } from 'socket.io-client'
 type Payload = {
   message: Message
   users: any
+}
+
+class UserStore {
+  authData?: AuthData
+  
+  constructor(
+    readonly http: HttpService
+  ) {}
+  
+  loadProfile = async() =>
+    this.authData = await this.http.fetch<AuthData>('/api/users/me')
 }
 
 export class WSClient {
