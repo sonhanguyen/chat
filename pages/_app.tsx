@@ -23,7 +23,7 @@ export default function Protected({ Component, pageProps }: AppProps) {
   if (!UNPROTECTED.includes(router.pathname) && (
     auth.pending || !auth.result
   )) {
-    if (auth.error) router.push(LOGIN)
+    if (auth.error) router.push(LOGIN, router.asPath)
 
     return null
   }
