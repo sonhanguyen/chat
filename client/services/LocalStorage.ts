@@ -1,6 +1,7 @@
 export default class LocalDataService<T extends {}> {
   get<K extends string & keyof T>(key: K): T[K] | null {
-    if (typeof window === 'undefined') return null
+    if (typeof window === 'undefined') return null // when server rendering
+
     const value = localStorage.getItem(key)
     if (value === null) return null
     return JSON.parse(value)

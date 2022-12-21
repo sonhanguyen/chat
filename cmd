@@ -2,7 +2,7 @@
 PATH=./node_modules/.bin:$PATH
 
 dev() {
-  # auto matically restart server when code changes
+  # automatically restart server when code changes
   npx ts-node-dev -T --respawn server
 }
 

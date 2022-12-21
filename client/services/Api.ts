@@ -1,6 +1,7 @@
-import HttpService from './HttpService';
-import { Message } from '../../server/dal/entities/Messages';
+import HttpService from './HttpService'
+import UserStore from './UserStore'
 
+import { type Message } from '../../server/api/messages'
 export type { Message }
 
 export type AuthData = {
@@ -10,17 +11,17 @@ export type AuthData = {
 }
 
 export default class Api {
-  users: UserStore
+  readonly users: UserStore
 
-  constructor(
-    readonly http: HttpService,
-    private saveAuthData: (_: AuthData) => void
-  ) {
-    this.users = new UserStore(http)
+  constructor(private config: Pick<UserStore, 'onAuthorized'> & {
+    http: HttpService,
+    saveAuthData: (_: AuthData) => void
+  }) {
+    this.users = new UserStore(config.http, config.onAuthorized)
   }
 
   login = async (cred: { username: string, password: string }) => {
-    const authData = await this.http.fetch<AuthData>(
+    const authData = await this.config.http.fetch<AuthData>(
       '/api/login',
       { 
         headers: { 'Content-Type': 'application/json' },
@@ -29,16 +30,15 @@ export default class Api {
       }
     )
 
-    Object.assign(this, { authData })
-    this.saveAuthData(authData)
+    this.config.saveAuthData(authData)
   }
 
   loadChatHistory = async (userId: string, timestamp?: string, limit = 10) => {
-    return this.http.fetch<Message[]>('/api/messages/' + userId)
+    return this.config.http.fetch<Message[]>('/api/messages/' + userId)
   }
 
   send = async (to: string, body: string) => {
-    return this.http.fetch('/api/messages', {
+    return this.config.http.fetch('/api/messages', {
       method: 'POST',
       body: JSON.stringify({ to, body }), 
     })
@@ -46,35 +46,17 @@ export default class Api {
 }
 
 import io, { Socket } from 'socket.io-client'
-
-type Payload = {
-  message: Message
-  users: any
-}
-
-class UserStore {
-  authData?: AuthData
-  
-  constructor(
-    readonly http: HttpService
-  ) {}
-  
-  loadProfile = async() =>
-    this.authData = await this.http.fetch<AuthData>('/api/users/me')
-}
+import { type Payload } from '../../server/services/WSServer';
 
 export class WSClient {
   private socket!: Socket
 
   constructor(
     private getAuthToken: () => string | void,
-    private endpoint = process.env.NEXT_PUBLIC_REST_URL
-  ) {
-
-  }
+  ) {}
 
   connect() {
-    this.socket = io(this.endpoint as string, {
+    this.socket = io({
       extraHeaders: {
         Authorization: this.getAuthToken() as string
       }
@@ -82,6 +64,7 @@ export class WSClient {
   }
 
   on<T extends keyof Payload>(event: T, handler: (_: Payload[T]) => void): () => void {
+    this.socket.on(event, console.log as any)
     this.socket.on(event, handler as any)
     
     return () => this.socket.removeListener(event, handler as any)

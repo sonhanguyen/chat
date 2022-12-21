@@ -1,58 +1,60 @@
 
-import express, { type RequestHandler } from 'express'
+import express from 'express'
 import next from 'next'
 import cors from 'cors'
 import config from './config'
-
-const bodyParser = require('body-parser')
-
-const staticServer = next({ dev: config.env != 'production' })
-
-const handle = staticServer.getRequestHandler()
-const app = express()
-
-import SocketIO from 'socket.io'
+import WSServer, { makeMidleware } from './services/WSServer'
 import { middlewares } from './services'
+import api from './api'
 
-app.use(bodyParser.urlencoded({ extended: false }))
-app.use(bodyParser.json())
-app.use(cors())
+class Server {
+  readonly socket?: WSServer
+  
+  async start(
+    port = config.webServerPort,
+    env = config.env
+  ) {
+    const staticServer = next({ dev: env != 'production' })
 
-// Assign socket object to every request
-app.use(function (req, res, next) {
-  Object.assign(req, { io })
-  next()
-})
+    const handle = staticServer.getRequestHandler()
+    const app = express()  
+    const bodyParser = require('body-parser')
+    app.use(bodyParser.urlencoded({ extended: false }))
+    app.use(bodyParser.json())
+    app.use(cors())
 
-import login from './api/login'
-import messages from './api/messages'
-import users from './api/users'
+    // attach api routes
+    api(app, middlewares.auth)
 
-app.use('/api/login', login)
-app.use('/api/messages', middlewares.auth, messages)
-app.use('/api/users', middlewares.auth, users)
-app.all("*", (req: any, res: any) => handle(req, res))
+    // fall back to nextjs routes
+    app.all("*", (req: any, res: any) => handle(req, res))
 
-const port = Number() || 3000
-let io: SocketIO.Server
+    await staticServer.prepare()
 
-const makeMidleware = (middleware: RequestHandler<any, any>) =>
-  ({ request, handshake }: any, next: (err?: any) => void) =>
-    middleware(handshake || request, {} as any, next as any)
+    await new Promise<void>((resolve, reject) => {
+      const httpServer = app.listen(port, (err?: any) => {
+        if (err) reject(err)
+        else resolve()
+      })
 
-staticServer
-  .prepare()
-  .then(() =>
-    io = new SocketIO.Server(
-      app.listen(port, (err?: any) => {
-        if (err) throw err;
-        console.log(`> Ready on localhost:${port} - env ${process.env.NODE_ENV}`);
-      }), {
-        cors: { origin: '*' }
-      }
-    ),//.use(makeMidleware(middlewares.auth)),
-    (err: any)  => {
-      console.error(err);
-      process.exit(1);
-    }
-  )
+      ;(this.socket as WSServer) = new WSServer(
+        httpServer, makeMidleware(middlewares.auth)
+      )
+    })
+
+    return { port, env }
+  }
+}
+
+const server = new Server
+
+server
+  .start()
+  .then(({ port, env }) => {
+    console.log(`> Ready on localhost:${port} - env ${env}`)
+  }, err => {
+    console.error(err)
+    process.exit(1)
+  })
+
+export default server

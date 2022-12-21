@@ -1,43 +1,13 @@
 import { observable } from 'mobx'
-import { observer } from 'mobx-react'
 import React from 'react'
+import styled from 'styled-components'
 
+import Conversation from '../../client/components/Conversation'
+import { type Message } from '../../client/components/Message'
 import { useAction, withDefaults, withNextJsRouteQuery } from '../../client/lib'
 import { api, wsClient } from '../../client/services'
 import { Message as Msg } from '../../client/services/Api'
-
-type ConversationProps = {
-  messages: Message[]
-  loadHistory(): Promise<void>
-}
-
-type Message = {
-  id: string
-  body: string
-  timestamp: Date
-  sender: {
-    isMe?: boolean
-    name: string
-  }
-}
-
-const Message: React.FunctionComponent<Message> = ({ body }) => {
-  return <span>{body}</span>
-}
-
-const Conversation = observer(
-  ({ messages, loadHistory }: ConversationProps) => {
-    const loadChat = useAction(loadHistory)
-
-    React.useEffect(() => {
-      loadChat()
-    }, [])
-
-    return <div>
-      {messages.map(msg => <Message key={msg.id} {...msg} />)}
-    </div>
-  }
-)
+import { verticalBox } from '../../client/components/ux'
 
 type NewMessageProps = {
   send(_: string): Promise<void>
@@ -76,7 +46,9 @@ class Chat extends React.Component<ChatProps> {
   }
 
   componentDidMount(): void {
-    this.unsubscribe = this.props.onMessage(console.log)
+    this.unsubscribe = this.props.onMessage(
+      msg => this.messages.push(msg)
+    )
   }
 
   componentWillUnmount(): void {
@@ -85,15 +57,21 @@ class Chat extends React.Component<ChatProps> {
   }
 
   render() {
-    return <div>
+    return <Layout>
       <Conversation
         messages={this.messages}
         loadHistory={this.loadHistory}
       />
       <NewMessage send={this.props.send}/>
-    </div>
+    </Layout>
   }  
 }
+
+const Layout = styled.div`
+  ${verticalBox}
+
+  height: 100vh;
+`
 
 type RouteProps = {
   correspondenceId: string
@@ -121,7 +99,9 @@ const makeDefaultProps = ({ correspondenceId: userId }: RouteProps): ChatProps =
     async send(msg) {
       await api.send(userId, msg)
     },
-    onMessage: (handler) => wsClient.on('message', msg => handler(mapMessage(msg)))
+    onMessage: handler => wsClient.on('message', msg => {
+      if ([msg.sender, msg.receiver].includes(userId)) handler(mapMessage(msg))
+    })
   }
 }
 

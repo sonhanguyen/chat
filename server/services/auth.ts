@@ -1,9 +1,9 @@
 import { Strategy, ExtractJwt } from 'passport-jwt'
-import { type User } from '../dal/entities/Users'
+import { type User as Me } from '../dal/entities/Users'
 import passport from 'passport'
 
 export const makeMiddleware = (
-  userById: (id: string) => Promise<User | undefined>,
+  userById: (id: string) => Promise<Me | undefined>,
   secretOrKey: string
 ) => {
   passport.use(
@@ -26,6 +26,9 @@ export const makeMiddleware = (
 
 declare global {
   namespace Express {
-    interface User { id: string }
+    interface User extends Me {
+      // the passport library creates this global type so that we can customize (by merging) the type of injected req.user
+      // typescriptlang.org/docs/handbook/declaration-merging.html
+    }
   }
 }

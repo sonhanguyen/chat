@@ -113,3 +113,40 @@ export function withDefaults<D, T = {}>(
     return withDebugName(withDefaults.name, Component, wrapped)
   }
 }
+
+export type PropsOf<T> =
+  T extends React.ComponentType<infer P> ? P :
+  T extends (..._: [infer P, ...any ]) => any ? P : {}
+
+export const relativeTime = (timestamp: number) => {
+  const formatter = new Intl.RelativeTimeFormat(undefined, {
+    numeric: 'auto'
+  })
+
+  const DIVISIONS = Array<{
+    unit: Intl.RelativeTimeFormatUnit,
+    base: number
+  }>(
+    { base: 60, unit: 'seconds' },
+    { base: 60, unit: 'minutes' },
+    { base: 24, unit: 'hours' },
+    { base: 7, unit: 'days' },
+    { base: 4.34524, unit: 'weeks' },
+    { base: 12, unit: 'months' }
+  )
+
+  let duration = (timestamp - Date.now()) / 1000
+
+  const as = (unit: Intl.RelativeTimeFormatUnit) =>
+    formatter.format(Math.round(duration), unit)
+
+  for (let i = 0; i < DIVISIONS.length; ++i) {
+    const division = DIVISIONS[i]
+    if (Math.abs(duration) < division.base) return as(division.unit)
+
+    duration /= division.base
+  }
+
+  return as('year')
+}
+

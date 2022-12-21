@@ -1,7 +1,10 @@
 import { db as database } from '../knexfile'
+// @ts-ignore knex cli complains here for whatever reason
 import { Message } from 'zapatos/schema'
 
-const Message = ({ utc_time, ...msg }: Message.Selectable) => ({ ...msg, timestamp: new Date(utc_time)})
+const Message = ({ utc_time, ...msg }: Message.Selectable) => ({
+  ...msg, timestamp: utc_time.getTime()
+})
 
 export type Message = ReturnType<typeof Message>
 
@@ -20,5 +23,20 @@ export default class Messages {
     `, { from, to })
 
     return rows.map(Message)
+  }
+
+  async create(
+    body: string,
+    sender: string,
+    receiver: string
+  ) {
+    const { rows: [ created ] } = await this.db.raw(`
+      INSERT INTO "${Messages.TABLE}" (
+        body, sender, receiver
+      ) VALUES (?, ?, ?)
+      RETURNING *
+    `, [ body, sender, receiver ])
+
+    return Message(created)
   }
 }

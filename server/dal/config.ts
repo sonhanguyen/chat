@@ -1,5 +1,6 @@
 const {
   DB_HOST,
+  DB_PORT,
   POSTGRES_DB,
   POSTGRES_USER,
   POSTGRES_PASSWORD
@@ -8,7 +9,8 @@ const {
 const config = {
   database: POSTGRES_DB || POSTGRES_USER,
   password: POSTGRES_PASSWORD,
-  host: DB_HOST,
+  port: Number(DB_PORT)|| 5432,
+  host: DB_HOST
 }
 
 export default config

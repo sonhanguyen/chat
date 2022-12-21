@@ -1,5 +1,6 @@
 {
   "dependencies": {
+    "@ngneat/falso": "^6.3.2",
     "@types/node": "^18.11.17",
     "knex": "^2.3.0",
     "pg": "^8.8.0",

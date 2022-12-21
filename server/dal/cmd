@@ -16,8 +16,15 @@ migrate() {
   type-gen || { exit 1; }
 }
 
+print-db() {
+  ts-node -T <<'EOF'
+    import { db } from './knexfile'
+    console.log(`${db.host}:${db.port}`)
+EOF
+}
+
 init() {
-  wait-for-it ${DB_HOST:-localhost}:${DB_PORT:-5432} || { exit 1; }
+  wait-for-it `print-db` || { exit 1; }
   migrate
   echo 'seeding db..'
   knex seed:run
