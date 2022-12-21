@@ -1,5 +1,6 @@
 import { api } from '../client/services'
 import React from 'react'
+import { LOGIN } from './_app'
 
 const createHandler = ({ 
   onLoggedIn,
@@ -26,7 +27,12 @@ const Login: React.FunctionComponent<Props> = (props) => {
 }
 
 Login.defaultProps = {
-  onLoggedIn: () => location.href = '/',
+  onLoggedIn: () => {
+    if (location.href != LOGIN) location.reload()
+    // if the adress bar's url isn't LOGIN, then it's the route to redirect back
+    // when logged in, so we simply tell browser to load it
+    else location.href = '/'
+  },
   login: api.login
 }
 

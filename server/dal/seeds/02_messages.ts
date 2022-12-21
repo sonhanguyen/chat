@@ -3,33 +3,27 @@ import Messages from '../entities/Messages'
 import { Message } from 'zapatos/schema'
 import Users from '../entities/Users'
 import { type Knex } from 'knex';
-import { randPhrase, randNumber, randRecentDate, randBoolean } from '@ngneat/falso'
+import { randPhrase, randNumber, randRecentDate, randBoolean, rand } from '@ngneat/falso'
 
 export async function seed(knex: Knex): Promise<void> {
-  const users = new Users(knex)
-  const [ sender, receiver ] = (await users.all(2)).map(it => it.id)
+  const users = (await new Users(knex).all()).map(it => it.id)
 
   await knex(Messages.TABLE).del()
 
   const start = randRecentDate().getTime()
   const now = Date.now()
-  const length = 100
-  const space = (now - start) / length
 
   const messages = Array
-    .from({ length })
-    .map<Message.Insertable>((_, index) => {
-      const msg = randBoolean()
-        ? { sender: receiver, receiver: sender }
-        : { sender, receiver }
-
-      return { ...msg,
-        utc_time: new Date(
-          space * index + randNumber(
-            { min: -space, max: space }
-          )
-        ),
-        body: randPhrase()
+    .from({ length: 500 })
+    .map<Message.Insertable>(_ => {
+      const sender = rand(users)
+      const receiver = rand(users.filter(it => it != sender))
+  
+      return {
+        utc_time: new Date(randNumber({ min: start, max: now })),
+        body: randPhrase(),
+        receiver,
+        sender
       }
     })
 

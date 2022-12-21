@@ -13,16 +13,18 @@ type UserListProps = {
 }
 
 const UserList = observer(
-  ({ users, loadUsers }: UserListProps) => {
+  ({ users, loadUsers, onSelect }: UserListProps) => {
 
     React.useEffect(() => {
-      console.log('useEffect')
       loadUsers()
     }, [])
 
     return <Layout>
       {users.map(user =>
-        <User key={user.id} {...user} />
+        <User
+          {...user} 
+          key={user.id}
+          onClick={() => onSelect?.(user)} />
       )}
     </Layout>
   }
@@ -35,7 +37,6 @@ const User: React.ComponentType<User & {
     onClick={onClick}
     {...props}
   >
-    sadgfdaf
     <user.name active={props.connected}>{props.name}</user.name>
   </user.layout>
 

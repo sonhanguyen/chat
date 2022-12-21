@@ -15,11 +15,10 @@ export default class Users {
     private db = database()
   ) { }
 
-  async all(limit?: number) {
-    const query = this.db(Users.TABLE).select()
-    if (Number.isInteger(limit)) query.limit(limit)
-    
-    return (await query).map(User)
+  async all() {
+    const users = await this.db(Users.TABLE).select()
+
+    return users.map(User)
   }
 
   async byId(id: string) {

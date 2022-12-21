@@ -12,11 +12,12 @@ const makeDefaultProps = () => {
     observableUsers.replace(
       users.all.filter(user => user.id != users.auth?.id)
     )
-
-    console.log(users.all)
   })
 
   return {
+    onSelect({ id }: User) {
+      location.href = '/chat/' + id
+    },
     loadUsers: users.loadFriends,
     users: observableUsers
   }
