@@ -35,7 +35,7 @@ export class WSServer {
 
       socket.broadcast.emit('user', { ...user, connected: true })
 
-      // put all socket from the same user to the same broadcasting
+      // put all sockets from the same user into the same broadcasting room
       socket.join(user.id)
 
       socket.on('disconnect', () => {

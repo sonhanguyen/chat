@@ -2,9 +2,11 @@ services:
   db:
     image: postgres  
     ports: 
-      - 5432:5432
+      - ${DB_PORT}:${DB_PORT}
     env_file: .env
   web:
+    ports: 
+      - ${PORT}:${PORT}
     environment:
       - DB_HOST=db
     build:
