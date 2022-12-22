@@ -1,8 +1,8 @@
 import HttpService from './HttpService'
 import UserStore from './UserStore'
 
-import { type Message } from '../../server/api/messages'
-export type { Message }
+import type { Message, Paginated } from '../../server/api/messages'
+export type { Message, Paginated }
 
 export type AuthData = {
   token: string
@@ -33,8 +33,14 @@ export default class Api {
     this.config.saveAuthData(authData)
   }
 
-  loadChatHistory = async (userId: string, timestamp?: string, limit = 10) => {
-    return this.config.http.fetch<Message[]>('/api/messages/' + userId)
+  loadChatHistory = async (userId: string, limit = 0, timestamp?: number) => {
+    const query = new URLSearchParams
+    query.append('withUser', userId)
+    query.append('limit', String(limit))
+
+    if (timestamp) query.append('before', String(timestamp))
+
+    return this.config.http.fetch<Paginated>(`/api/messages/conversation?${Math.random()}&` + query)
   }
 
   send = async (to: string, body: string) => {
@@ -46,7 +52,7 @@ export default class Api {
 }
 
 import io, { Socket } from 'socket.io-client'
-import { type Payload } from '../../server/services/WSServer';
+import { type Payload } from '../../server/services/PushServer';
 
 export class WSClient {
   private socket!: Socket

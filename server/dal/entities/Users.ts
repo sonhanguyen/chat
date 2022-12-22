@@ -9,7 +9,7 @@ const User = ({ password, ...user }: User.Selectable) =>
 export type User = ReturnType<typeof User>
 
 export default class Users {
-  static TABLE: User.Table = 'User'
+  static TABLE = 'User' satisfies User.Table
 
   constructor(
     private db = database()

@@ -14,9 +14,9 @@ export async function seed(knex: Knex): Promise<void> {
   const now = Date.now()
 
   const messages = Array
-    .from({ length: 500 })
-    .map<Message.Insertable>(_ => {
-      const sender = rand(users)
+    .from({ length: 1000 })
+    .map(_ => rand(users))
+    .map<Message.Insertable>(sender => {
       const receiver = rand(users.filter(it => it != sender))
   
       return {

@@ -1,13 +1,14 @@
-import { observable } from 'mobx'
 import React from 'react'
+import { observable } from 'mobx'
 import styled from 'styled-components'
 
-import Conversation from '../../client/components/Conversation'
+import Conversation, { type Controller as Scrollable } from '../../client/components/Conversation'
 import { type Message } from '../../client/components/Message'
-import { useAction, withDefaults, withNextJsRouteQuery } from '../../client/lib'
+import { PropsOf, useAction, withDefaults, withRouteQuery } from '../../client/lib'
 import { api, wsClient } from '../../client/services'
-import { Message as Msg } from '../../client/services/Api'
-import { verticalBox } from '../../client/components/ux'
+import { Message as Msg, Paginated } from '../../client/services/Api'
+import { rounded, verticalBox, withBg } from '../../client/components/ux'
+import Layout from '..'
 
 type NewMessageProps = {
   send(_: string): Promise<void>
@@ -20,35 +21,89 @@ const NewMessage = (props: NewMessageProps) => {
     if (textarea) send(textarea.value).then(() => textarea.value = '')
   }
 
-  return <fieldset disabled={!!send.pending}>
-    <textarea />
+  return <ChatInput disabled={!!send.pending}>
+    <Textarea bg='inactive' />
     <button onClick={submit}>Send</button>
-  </fieldset>
+  </ChatInput>
 }
+
+const ChatInput = styled.fieldset`
+  display: inline;
+  position: relative;
+  text-align: right;
+  border: none;
+
+  & > button {
+    position: absolute;
+    bottom: 0;
+    right: 0;
+  }
+`
+
+const Textarea = styled.textarea<
+  & PropsOf<typeof rounded>
+  & PropsOf<typeof withBg>
+>`
+  ${rounded}
+  ${withBg}
+
+  overflow: auto;
+  outline: none;
+  box-shadow: none;
+  border-style: none;
+  resize: none;
+
+  font-size: 2rem;
+`
 
 type ChatProps = {
   onMessage(_: (_: Message) => void): Chat['unsubscribe']
-  loadHistory(): Promise<Message[]>
+  loadHistory(_?: number): Promise<Paginated<Message>>
   send(_: string): Promise<void>
 }
 
 class Chat extends React.Component<ChatProps> {
   messages = observable.array<Message>()
-  unsubscribe?: () => void
+  hasMore?: boolean
+
+  private unsubscribe?: () => void
+  private scrollable = React.createRef<Scrollable>()
 
   loadHistory = async () => {
-    const messages = await this.props.loadHistory()
+    if (this.hasMore === false) return
+    const [ earliest ] = this.messages
+    const { messages, hasMore } = await this.props.loadHistory(earliest?.timestamp)
+
+    this.hasMore = hasMore
+
     const ids = new Set(this.messages.map(it => it.id))
 
     this.messages.unshift(...messages
       .filter(msg => !ids.has(msg.id))
     )
   }
-
+  
+  showLast = (delay?: number) => setTimeout(
+    () => this.scrollable.current?.showLast(),
+    delay // the view might not be ready/updated immediately
+  )
+  
   componentDidMount(): void {
-    this.unsubscribe = this.props.onMessage(
-      msg => this.messages.push(msg)
-    )
+    this.showLast(500)
+
+    this.unsubscribe = this.props.onMessage(msg => {
+      this.messages.push(msg)
+      this.showLast()
+    })
+  }
+
+  async componentDidUpdate({ loadHistory }: Readonly<ChatProps>) {
+    if (loadHistory !== this.props.loadHistory) {
+      this.messages.clear()
+      delete this.hasMore
+      await this.loadHistory()
+      this.showLast()
+    }
   }
 
   componentWillUnmount(): void {
@@ -58,17 +113,25 @@ class Chat extends React.Component<ChatProps> {
 
   render() {
     return <Layout>
-      <Conversation
-        messages={this.messages}
-        loadHistory={this.loadHistory}
-      />
-      <NewMessage send={this.props.send}/>
+      <ChatLayout>
+        <Conversation
+          ref={this.scrollable}
+          messages={this.messages}
+          loadHistory={this.loadHistory}
+          onScrollToTop={this.loadHistory}
+        />
+        <NewMessage send={this.props.send}/>
+      </ChatLayout>
     </Layout>
   }  
 }
 
-const Layout = styled.div`
+const ChatLayout = styled.div`
   ${verticalBox}
+
+  & > :first-child {
+    flex: 1;
+  }
 
   height: 100vh;
 `
@@ -84,27 +147,32 @@ const makeDefaultProps = ({ correspondenceId: userId }: RouteProps): ChatProps =
       body,
       timestamp,
       sender: {
-        name: 'name',
+        name: api.users.byId(sender)?.name!,
         isMe: userId != sender
       }
     }
   )
 
   return {
-    async loadHistory() {
-      const messages = await api.loadChatHistory(userId)
-      return messages.map(mapMessage)
+    async loadHistory(beforeTs?: number, limit?: number) {
+      const { messages, hasMore } = await api.loadChatHistory(userId, limit, beforeTs)
+
+      return {
+        messages: messages.map(mapMessage),
+        hasMore
+      }
     },
 
     async send(msg) {
       await api.send(userId, msg)
     },
+
     onMessage: handler => wsClient.on('message', msg => {
       if ([msg.sender, msg.receiver].includes(userId)) handler(mapMessage(msg))
     })
   }
 }
 
-export default withNextJsRouteQuery<RouteProps>()(
-  withDefaults(makeDefaultProps)(Chat)
+export default withRouteQuery<RouteProps>()(
+  withDefaults(makeDefaultProps, 'correspondenceId')(Chat)
 )

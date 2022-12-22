@@ -7,22 +7,48 @@ const Message = ({ utc_time, ...msg }: Message.Selectable) => ({
 })
 
 export type Message = ReturnType<typeof Message>
+export type Paginated<T = Message> = { hasMore: boolean, messages: T[] }
 
 export default class Messages {
-  static TABLE: Message.Table = 'Message'
+  static TABLE = 'Message' satisfies Message.Table
 
   constructor(
     private db = database()
   ) { }
 
-  async byParticipants(from: string, to: string) {
-    const { rows } = await this.db.raw(`
-      SELECT * FROM "${Messages.TABLE}"
-      WHERE sender = :from AND receiver = :to
-         OR sender = :to AND receiver = :from
-    `, { from, to })
+  async byParticipants(...params: [user: string, user: string, options?: {
+    before?: number,
+    limit?: number
+  }]): Promise<Paginated> {
+    const users = [ ...params ].reverse() as [ string, string ]
+    const options = params.pop() as typeof params[number]
+    if (options instanceof Object) {
+      var { limit, before } = options
+      users.shift()
+    }
 
-    return rows.map(Message)
+    const participants = 'sender = ? AND receiver = ?'
+    const query = this.db(Messages.TABLE)
+      .select()
+      .where(db => db
+        .whereRaw(participants, users)
+        .orWhereRaw(participants, [...users].reverse())
+      )
+      .orderBy('utc_time' satisfies Message.Column)
+    
+    if (limit) {
+      limit++ // query one more to determine if this is the last page
+      query.limit(limit)
+    }
+    if (before) query.andWhereRaw('utc_time > to_timestamp(?)', [ before ])
+
+    const messages = (await query).map(Message)
+    if (messages.length == limit) {
+      var hasMore = true
+      messages.pop()
+    } else hasMore = false
+
+    return { hasMore, messages }
   }
 
   async create(

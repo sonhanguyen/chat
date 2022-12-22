@@ -28,12 +28,9 @@ export const useAction = <
   type State = ReturnType<typeof useAction>
   const make = (pending?: Promise<R>): State => {
     const initial: F = (async (...args: Parameters<F>) => {
+      if (pending) return pending
       const promise = func(...args)
       setActionState((_: State) => make(promise))
-      // passing the function form of SetStateAction to `setState` is required, b/c state here is a
-      // function (has the type F), so if passed as value to setState, react will think we're using
-      // said function form of `SetStateAction`, and call it, which is not what we want
-      // (we're just setting state, not calling the function that state happens to be)
       const resolvedState = make()
       try {
         Object.assign(resolvedState, { result: await promise })
@@ -42,6 +39,11 @@ export const useAction = <
       }
 
       setActionState((_: State) => resolvedState)
+
+      // passing the function form of SetStateAction to `setState` is required, b/c state here is a
+      // function (has the type F), so if passed as value to setState, react will think we're using
+      // said function form of `SetStateAction`, and call it, which is not what we want
+      // (we're just setting state, not calling the function that state happens to be)
     }) as any
     
     Object.assign(initial, {
@@ -73,10 +75,10 @@ function withDebugName<T extends {}>(
   })
 }
 
-export function withNextJsRouteQuery<Q>(
-  shouldRender: (it: any) => it is Q = function whenNotEmpty(query: any) {
-    return Object.keys(query).length
-  } as any
+export function withRouteQuery<Q>(
+  shouldRender = function whenNotEmpty(query: any): query is Q {
+    return !!Object.keys(query).length
+  }
 ) {
   /**
    * @param a react component
@@ -90,28 +92,52 @@ export function withNextJsRouteQuery<Q>(
       return null
     }
 
-    return withDebugName(withNextJsRouteQuery.name, Component, wrapped)
+    return withDebugName(withRouteQuery.name, Component, wrapped)
   }
 }
 
-export function withDefaults<D, T = {}>(
-  defaultProps: (_: T) => D
+
+export function withHook<Hook extends (_: any) => any>(
+  useProps: Hook, debugName = useProps.name
 ) {
   return function<P>(Component: React.ComponentType<P>) {
-    const wrapped = (props: Omit<P, keyof D> & T & Partial<D>) => {
+    const wrapped = (props:
+      & Omit<P, keyof ReturnType<Hook>>
+      & PropsOf<Hook>
+      & Partial<ReturnType<Hook>>
+    ) => {
       const injected = { ...props }
+      const toInject = useProps(props)
 
-      const defaults = defaultProps(props as any)
-      for (const prop in defaults) {
+      for (const prop in toInject) {
         if (prop in props) continue
-        injected[prop] = defaults[prop] as any
+        injected[prop] = toInject[prop] as any
       }
 
       return <Component { ...injected as any } />
     }
     
-    return withDebugName(withDefaults.name, Component, wrapped)
+    return withDebugName(debugName, Component, wrapped)
   }
+}
+
+export function withDefaults<
+  Defaults,
+  Deps extends string[],
+  Props extends Record<Deps[number], any>
+>(
+  defaultProps: (_: Props) => Defaults,
+  ...dependencies: Deps
+  // if specified the props will be re-calculated everytime any of
+  // the dependency props update
+) {
+  return withHook<typeof defaultProps>(
+    props => React.useMemo(
+      () => defaultProps(props as any),
+      dependencies.map(key => (props as any)[key])
+    ),
+    withDefaults.name
+  )
 }
 
 export type PropsOf<T> =

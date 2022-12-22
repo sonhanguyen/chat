@@ -11,7 +11,7 @@ export type Payload = {
   user: User
 }
 
-export class WSServer {
+export class PushServer {
   readonly io: SocketIO.Server
 
   constructor(
@@ -58,4 +58,4 @@ export const makeMidleware = (middleware: RequestHandler<any, any>) =>
 ({ request, handshake }: any, next: (err?: any) => void) =>
   middleware(handshake || request, {} as any, next as any)
 
-export default WSServer
+export default PushServer

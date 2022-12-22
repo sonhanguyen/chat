@@ -1,12 +1,17 @@
 import { Router } from 'express'
 import { messages } from '../services'
-export { type Message } from '../dal/entities/Messages'
+export type { Message, Paginated } from '../dal/entities/Messages'
 import server from '..'
 
 export default Router()
-  .get('/:id', async (req, res) => {
-    const { params: { id }, user } = req
-    const chatHistory = await messages.byParticipants(id, user?.id!)
+  .get('/conversation', async (req, res) => {
+    const { query: { withUser, before, limit }, user } = req
+    const chatHistory = await messages.byParticipants(
+      user?.id!, withUser as string, {
+        before: Number(before),
+        limit: Number(limit)
+      }
+    )
 
     res.send(chatHistory)
   })

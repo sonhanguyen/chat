@@ -12,24 +12,60 @@ export type Message = {
   }
 }
 
-export type Props = Message & { className?: string }
+export type Props = Message & {
+  className?: string
+  right?: boolean
+}
 
-const Message: React.FunctionComponent<Props> = ({ className, body, timestamp }) => {
+const Message: React.FunctionComponent<Props> = ({ className, body, sender, timestamp }) => {
   return <div className={className}>
-    <span>{relativeTime(timestamp)}</span>
-    {body}
+    <Body bg={ sender.isMe? 'inactive' : 'active' }>{body}</Body>
+    <Time>{relativeTime(timestamp)}</Time>
   </div>
 }
 
-export default styled(Message).attrs(({ sender }) => ({
-  bg: sender.isMe ? 'inactive' : 'active'
-}))<
+const Body = styled((props: { className?: string, children: string }) =>
+  <div className={props.className}>
+    {props.children
+      .split(/(\n)/g)
+      .map(it => it == '\n' ? <br /> : it)
+    }
+  </div>
+)<
+  & PropsOf<typeof verticalBox>
   & PropsOf<typeof padded>
-  & PropsOf<typeof withBg>
   & PropsOf<typeof rounded>
+  & PropsOf<typeof withBg>
 >`
   ${padded({ padding: 'small' })}
+  ${verticalBox}
   ${rounded}
   ${withBg}
+`
+
+const Time = styled.div``
+
+export default styled(Message)`
   ${verticalBox}
+
+  display: inline-flex;
+  position: relative;
+  
+  ${Time} {
+    position: absolute;
+    font-size: .5rem;
+    color: gray;
+
+    ${({ sender }) => sender.isMe
+      ? `
+        left: calc(-100% - 6rem);
+        right: calc(100% + .5rem);
+        bottom: 0;
+      `
+      : `
+        left: 0;
+        top: 100%;
+      `
+    }
+  }
 `

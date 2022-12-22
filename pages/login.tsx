@@ -1,6 +1,7 @@
-import { api } from '../client/services'
+import styled from 'styled-components'
 import React from 'react'
-import { LOGIN } from './_app'
+import { api } from '../client/services'
+import { Button, Input, verticalBox } from '../client/components/ux'
 
 const createHandler = ({ 
   onLoggedIn,
@@ -19,12 +20,21 @@ type Props = {
 }
 
 const Login: React.FunctionComponent<Props> = (props) => {
-  return <form onSubmit={createHandler(props)}>
-    <input name='username' />
-    <input type='password' name='password' />
-    <button>Login</button>
-  </form>
+  return <Form onSubmit={createHandler(props)}>
+    <Input name='username' placeholder='User Name'/>
+    <Input type='password' name='password' placeholder='Password (ONE space)'/>
+    <Button>Login</Button>
+  </Form>
 }
+
+const Form = styled.form`
+  ${verticalBox}
+
+  width: 100vw;
+  height: 100vh;
+  align-items: center;
+  justify-content: center;
+`
 
 Login.defaultProps = {
   onLoggedIn: () => {

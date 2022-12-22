@@ -1,5 +1,4 @@
 import React from 'react'
-import { observer } from 'mobx-react'
 import styled from 'styled-components'
 
 import { PropsOf } from '../lib'
@@ -12,23 +11,21 @@ type UserListProps = {
   users: User[]
 }
 
-const UserList = observer(
-  ({ users, loadUsers, onSelect }: UserListProps) => {
+const UserList = ({ users, loadUsers, onSelect }: UserListProps) => {
 
-    React.useEffect(() => {
-      loadUsers()
-    }, [])
+  React.useEffect(() => {
+    loadUsers()
+  }, [])
 
-    return <Layout>
-      {users.map(user =>
-        <User
-          {...user} 
-          key={user.id}
-          onClick={() => onSelect?.(user)} />
-      )}
-    </Layout>
-  }
-)
+  return <Layout>
+    {users.map(user =>
+      <User
+        {...user} 
+        key={user.id}
+        onClick={() => onSelect?.(user)} />
+    )}
+  </Layout>
+}
 
 const User: React.ComponentType<User & {
   onClick?(): void
@@ -49,14 +46,16 @@ const user = {
 }
 
 const Layout = styled.div<
+  & PropsOf<typeof verticalBox>
   & PropsOf<typeof scrollable>
   & PropsOf<typeof padded>
 >`
   ${verticalBox}
-  ${padded}
   ${scrollable}
+  ${padded}
 
- 
+  background: white;
+  opacity: 90%;
 `
 
 export default UserList

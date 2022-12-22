@@ -3,12 +3,12 @@ import express from 'express'
 import next from 'next'
 import cors from 'cors'
 import config from './config'
-import WSServer, { makeMidleware } from './services/WSServer'
+import PushServer, { makeMidleware } from './services/PushServer'
 import { middlewares } from './services'
 import api from './api'
 
 class Server {
-  readonly socket?: WSServer
+  readonly socket?: PushServer
   
   async start(
     port = config.webServerPort,
@@ -37,7 +37,7 @@ class Server {
         else resolve()
       })
 
-      ;(this.socket as WSServer) = new WSServer(
+      ;(this.socket as PushServer) = new PushServer(
         httpServer, makeMidleware(middlewares.auth)
       )
     })

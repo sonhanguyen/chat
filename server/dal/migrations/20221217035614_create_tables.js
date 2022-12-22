@@ -20,6 +20,8 @@ exports.up = knex => knex.raw(`
     receiver UUID REFERENCES "User" NOT NULL,
     body TEXT NOT NULL
   );
+
+  CREATE INDEX msg_time_idx ON "Message" (utc_time);
 `)
 
 /**

@@ -4,13 +4,22 @@ import { useRouter } from 'next/router'
 
 import { api } from '../client/services'
 import { useAction } from '../client/lib'
-import { createGlobalStyle } from 'styled-components'
 
-const Style = createGlobalStyle`
-  body {
-    margin: 0;
-  }
-`
+if (typeof document == 'object') {
+  const style = document.createElement('style')
+
+  document.head.appendChild(style)
+  style.appendChild(document.createTextNode(`
+    @import url('https://fonts.googleapis.com/css?family=Open+Sans');
+    
+    body {
+      margin: 0;
+      overflow: hidden;
+      font-family: "Open Sans", sans-serif;
+      font-size: 1.5rem;
+    }
+  `))
+}
 
 // The logic to authorize protected route is implemented here,
 // for simplicity, normally the `_app` is intended for layout and
@@ -29,7 +38,6 @@ export default function Protected({ Component, pageProps }: AppProps) {
   }
 
   return <>
-    <Style />
     <Component { ...pageProps } />
   </>
 }
