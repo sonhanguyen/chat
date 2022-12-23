@@ -2,7 +2,8 @@ import React from 'react'
 import { observable } from 'mobx'
 import styled from 'styled-components'
 
-import Conversation, { type Controller as Scrollable } from '../../client/components/Conversation'
+import Scrollable, { type Controller as ScrollableVM } from '../../client/components/Scrollable'
+import Conversation from '../../client/components/Conversation'
 import { type Message } from '../../client/components/Message'
 import { PropsOf, useAction, withDefaults, withRouteQuery } from '../../client/lib'
 import { api, wsClient } from '../../client/services'
@@ -56,28 +57,35 @@ const Textarea = styled.textarea<
   font-size: 2rem;
 `
 
-type ChatProps = {
+type Props = {
   onMessage(_: (_: Message) => void): Chat['unsubscribe']
   loadHistory(_?: number): Promise<Paginated<Message>>
   send(_: string): Promise<void>
 }
 
-class Chat extends React.Component<ChatProps> {
-  messages = observable.array<Message>()
-  hasMore?: boolean | Promise<boolean>
+type State = { hasMore?: null | boolean | Promise<void> }
+
+class Chat extends React.Component<Props, State> {
+  state: State = {}
+
+  readonly messages = observable.array<Message>()
 
   private unsubscribe?: () => void
-  private scrollable = React.createRef<Scrollable>()
+  private scrollable = React.createRef<ScrollableVM>()
 
   loadHistory = async () => {
-    if (this.hasMore === false
-      || this.hasMore instanceof Promise) return
+    if (this.state.hasMore === false
+      || this.state.hasMore instanceof Promise) return
 
     const [ earliest ] = this.messages
     const query = this.props.loadHistory(earliest?.timestamp)
-    this.hasMore = query.then(it => this.hasMore = it.hasMore)
+
+    this.setState({
+      hasMore: query.then(it => this.setState({ hasMore: it.hasMore }))
+    })
 
     const { results } = await query
+    results.reverse()
 
     const existingIds = new Set(this.messages.map(it => it.id))
     this.messages.unshift(...results
@@ -90,17 +98,22 @@ class Chat extends React.Component<ChatProps> {
     // setTimeout is needed so mobx reaction finishes updating view
   )
   
-  componentDidMount(): void {
+  async componentDidMount() {
+    await this.loadHistory()
+    this.showLast()
+
     this.unsubscribe = this.props.onMessage(msg => {
       this.messages.push(msg)
       this.showLast()
     })
   }
 
-  async componentDidUpdate({ loadHistory }: Readonly<ChatProps>) {
-    if (loadHistory !== this.props.loadHistory) {
+  async componentDidUpdate({ loadHistory }: Readonly<Props>) {
+    const correspondenceChanged = loadHistory != this.props.loadHistory
+
+    if (correspondenceChanged) {
       this.messages.clear()
-      delete this.hasMore
+      this.setState({ hasMore: null })
       await this.loadHistory()
       this.showLast()
     }
@@ -114,12 +127,15 @@ class Chat extends React.Component<ChatProps> {
   render() {
     return <Layout>
       <ChatLayout>
-        <Conversation
+        <Scrollable
           ref={this.scrollable}
-          messages={this.messages}
-          loadHistory={this.loadHistory}
           onScrollToTop={this.loadHistory}
-        />
+        >
+          <span style={{ margin: 'auto' }} onClick={this.loadHistory}>
+            {this.state.hasMore === true && 'more...'}
+          </span>
+          <Conversation messages={this.messages} />
+        </Scrollable>    
         <NewMessage send={this.props.send}/>
       </ChatLayout>
     </Layout>
@@ -140,7 +156,7 @@ type RouteProps = {
   correspondenceId: string
 }
 
-const makeDefaultProps = ({ correspondenceId: userId }: RouteProps): ChatProps => {
+const makeDefaultProps = ({ correspondenceId: userId }: RouteProps): Props => {
   const mapMessage = ({ body, sender, timestamp, id }: Msg) => (
     {
       id,

@@ -1,73 +1,33 @@
 import React from 'react'
 import { observer } from 'mobx-react'
 import Msg, { type Message } from './Message'
-import { PropsOf, useAction } from '../lib'
+import { PropsOf } from '../lib'
 import styled from 'styled-components'
-import { padded, scrollable, verticalBox } from './ux'
+import { padded, verticalBox } from './ux'
 
-type ConversationProps = MessagesProps & {
-  loadHistory(): Promise<void>
-  onScrollToTop?(): void
-}
-
-export type Controller = { showLast(): void }
-
-const Conversation = React.forwardRef<
-  Controller,
-  ConversationProps
->(({ messages, loadHistory, onScrollToTop = () => {} }, ref) => {
-    const loadChat = useAction(loadHistory)
-
-    React.useEffect(() => {
-      loadChat()
-    }, [])
-
-    const onMountEvent = ref && ((mounted: HTMLDivElement | null) => {
-      const refFunc = typeof ref === 'function' ? ref
-        : (it: typeof ref['current']) => ref.current = it
-
-      refFunc(mounted && {
-        showLast() {
-          mounted.scrollTop = mounted.scrollHeight
-        }
-      })
-    })
-
-    return <Scrollable
-      onScroll={forwardScrollEvent(React.useCallback(onScrollToTop, []))}
-      ref={onMountEvent}
-      gap='big'
-    >
-      <Messages messages={messages} />
-    </Scrollable>
-  }
-)
-
-type MessagesProps = {
+type ConversationProps = {
   messages: Message[]
 }
 
-const Messages = observer(({ messages }: MessagesProps) =>
-  <>
+const Conversation = observer(({ messages }: ConversationProps) =>
+  <Layout gap="big">
     {messages.map(message => {
       let Wrapper = theirs
       if (message.sender.isMe) Wrapper = mine
       
       return <Wrapper key={message.id}><Msg {...message}/></Wrapper>
     })}
-  </>
+  </Layout>
 )
 
 const theirs = styled.div``,
       mine = styled.div``
 
-const Scrollable = styled.div<
+const Layout = styled.div<
   & PropsOf<typeof verticalBox>
-  & PropsOf<typeof scrollable>
   & PropsOf<typeof padded>
 >`
   ${verticalBox}
-  ${scrollable}
   ${padded}
   
   background: white;
@@ -88,8 +48,3 @@ const Scrollable = styled.div<
 `
 
 export default Conversation
-
-const forwardScrollEvent = (onScrollToTop: () => void, threshold = 10) =>
-  ({ target }: React.UIEvent<HTMLDivElement> & { target: HTMLDivElement }) => {
-    if (target.scrollTop < threshold) onScrollToTop()
-  }

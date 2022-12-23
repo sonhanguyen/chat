@@ -34,15 +34,14 @@ export default class Messages {
       limit++ // query one more to determine if this is the last page
       query.limit(limit)
     }
+
     if (before) query.andWhereRaw("utc_time < to_timestamp(?)", [ before / 1000 ])
 
-    const results = (await query)
-      .map(Message)
-      .reverse()
+    const results = (await query).map(Message)
     
     if (results.length == limit) {
       var hasMore = true
-      results.shift()
+      results.pop()
     } else hasMore = false
 
     return { hasMore, results }
