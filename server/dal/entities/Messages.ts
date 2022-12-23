@@ -2,9 +2,9 @@ import { db as database } from '../knexfile'
 // @ts-ignore knex cli complains here for whatever reason
 import { Message } from 'zapatos/schema'
 
-const Message = ({ utc_time, ...msg }: Message.Selectable) => ({
-  ...msg, timestamp: utc_time.getTime()
-})
+function Message({ utc_time, ...msg }: Message.Selectable) {
+  return { ...msg, timestamp: utc_time.getTime() }
+}
 
 export type Message = ReturnType<typeof Message>
 export type Paginated<T = Message> = { hasMore: boolean, results: T[] }
@@ -34,9 +34,7 @@ export default class Messages {
       limit++ // query one more to determine if this is the last page
       query.limit(limit)
     }
-    if (before) query.andWhereRaw('utc_time < to_timestamp(?)', [ before ])
-
-    console.log(query.toSQL())
+    if (before) query.andWhereRaw("utc_time < to_timestamp(?)", [ before / 1000 ])
 
     const results = (await query)
       .map(Message)

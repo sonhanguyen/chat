@@ -33,7 +33,7 @@ export default class Api {
     this.config.saveAuthData(authData)
   }
 
-  loadChatHistory = async (userId: string, limit = 0, timestamp?: number) => {
+  loadChatHistory = async (userId: string, limit = 10, timestamp?: number) => {
     const query = new URLSearchParams
     query.append('withUser', userId)
     query.append('limit', String(limit))

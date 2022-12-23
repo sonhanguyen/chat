@@ -74,20 +74,14 @@ class Chat extends React.Component<ChatProps> {
       || this.hasMore instanceof Promise) return
 
     const [ earliest ] = this.messages
-    const promise = this.props.loadHistory(earliest?.timestamp)
-    this.hasMore = promise.then(it => this.hasMore = it.hasMore)
+    const query = this.props.loadHistory(earliest?.timestamp)
+    this.hasMore = query.then(it => this.hasMore = it.hasMore)
 
-    const { results } = await promise 
+    const { results } = await query
 
-    console.log({
-      current: this.messages.map(_ => _.timestamp),
-      earliest: earliest?.timestamp
-    }, results.map(_ => _.timestamp))
-
-    const ids = new Set(this.messages.map(it => it.id))
-
+    const existingIds = new Set(this.messages.map(it => it.id))
     this.messages.unshift(...results
-      .filter(msg => !ids.has(msg.id))
+      .filter(msg => !existingIds.has(msg.id))
     )
   }
   
