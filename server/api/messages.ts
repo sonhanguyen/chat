@@ -6,12 +6,11 @@ import server from '..'
 export default Router()
   .get('/conversation', async (req, res) => {
     const { query: { withUser, before, limit }, user } = req
-    const chatHistory = await messages.byParticipants(
-      user?.id!, withUser as string, {
-        before: Number(before),
-        limit: Number(limit)
-      }
-    )
+    const chatHistory = await messages.byParticipants({
+      users: [ user?.id!, withUser as string ],
+      before: Number(before),
+      limit: Number(limit)
+    })
 
     res.send(chatHistory)
   })

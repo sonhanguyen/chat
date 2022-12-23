@@ -7,7 +7,7 @@ const Message = ({ utc_time, ...msg }: Message.Selectable) => ({
 })
 
 export type Message = ReturnType<typeof Message>
-export type Paginated<T = Message> = { hasMore: boolean, messages: T[] }
+export type Paginated<T = Message> = { hasMore: boolean, results: T[] }
 
 export default class Messages {
   static TABLE = 'Message' satisfies Message.Table
@@ -16,39 +16,38 @@ export default class Messages {
     private db = database()
   ) { }
 
-  async byParticipants(...params: [user: string, user: string, options?: {
+  async byParticipants({ users, limit, before }: {
+    users: [string, string],
     before?: number,
     limit?: number
-  }]): Promise<Paginated> {
-    const users = [ ...params ].reverse() as [ string, string ]
-    const options = params.pop() as typeof params[number]
-    if (options instanceof Object) {
-      var { limit, before } = options
-      users.shift()
-    }
-
+  }): Promise<Paginated> {
     const participants = 'sender = ? AND receiver = ?'
     const query = this.db(Messages.TABLE)
       .select()
-      .where(db => db
+      .where(_ => _
         .whereRaw(participants, users)
         .orWhereRaw(participants, [...users].reverse())
       )
-      .orderBy('utc_time' satisfies Message.Column)
+      .orderBy('utc_time' satisfies Message.Column, 'desc')
     
     if (limit) {
       limit++ // query one more to determine if this is the last page
       query.limit(limit)
     }
-    if (before) query.andWhereRaw('utc_time > to_timestamp(?)', [ before ])
+    if (before) query.andWhereRaw('utc_time < to_timestamp(?)', [ before ])
 
-    const messages = (await query).map(Message)
-    if (messages.length == limit) {
+    console.log(query.toSQL())
+
+    const results = (await query)
+      .map(Message)
+      .reverse()
+    
+    if (results.length == limit) {
       var hasMore = true
-      messages.pop()
+      results.shift()
     } else hasMore = false
 
-    return { hasMore, messages }
+    return { hasMore, results }
   }
 
   async create(

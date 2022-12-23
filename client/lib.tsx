@@ -47,11 +47,8 @@ export const useAction = <
     }) as any
     
     Object.assign(initial, {
-      pending,
-      reset: () => setActionState((state: State) => {
-        if (state.pending || 'error' in state) return make()
-        return state
-      })
+      reset: () => setActionState((_: State) => make()),
+      pending
     })
 
     return initial as any
@@ -63,18 +60,19 @@ export const useAction = <
   return action as any
 }
 
-import { useRouter } from 'next/router'
-
 function withDebugName<T extends {}>(
   decoratorName: string,
-  { name, displayName = name }: { name: string, displayName?: string },
+  descriptor: { name: string, displayName?: string },
   target: T
 ) {
+  const { name, displayName = name } = descriptor
+
   return Object.assign(target, {
     displayName: `${decoratorName}(${displayName})`
   })
 }
 
+import { useRouter } from 'next/router'
 export function withRouteQuery<Q>(
   shouldRender = function whenNotEmpty(query: any): query is Q {
     return !!Object.keys(query).length

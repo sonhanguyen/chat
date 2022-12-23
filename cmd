@@ -3,7 +3,7 @@ PATH=./node_modules/.bin:$PATH
 
 dev() {
   # automatically restart server when code changes
-  npx ts-node-dev -T --respawn server
+  npx ts-node-dev -T --ignore-watch .next --respawn server
 }
 
 run() {

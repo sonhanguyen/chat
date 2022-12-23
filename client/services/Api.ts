@@ -40,7 +40,7 @@ export default class Api {
 
     if (timestamp) query.append('before', String(timestamp))
 
-    return this.config.http.fetch<Paginated>(`/api/messages/conversation?${Math.random()}&` + query)
+    return this.config.http.fetch<Paginated>('/api/messages/conversation?' + query)
   }
 
   send = async (to: string, body: string) => {

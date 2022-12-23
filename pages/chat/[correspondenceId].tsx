@@ -64,33 +64,39 @@ type ChatProps = {
 
 class Chat extends React.Component<ChatProps> {
   messages = observable.array<Message>()
-  hasMore?: boolean
+  hasMore?: boolean | Promise<boolean>
 
   private unsubscribe?: () => void
   private scrollable = React.createRef<Scrollable>()
 
   loadHistory = async () => {
-    if (this.hasMore === false) return
-    const [ earliest ] = this.messages
-    const { messages, hasMore } = await this.props.loadHistory(earliest?.timestamp)
+    if (this.hasMore === false
+      || this.hasMore instanceof Promise) return
 
-    this.hasMore = hasMore
+    const [ earliest ] = this.messages
+    const promise = this.props.loadHistory(earliest?.timestamp)
+    this.hasMore = promise.then(it => this.hasMore = it.hasMore)
+
+    const { results } = await promise 
+
+    console.log({
+      current: this.messages.map(_ => _.timestamp),
+      earliest: earliest?.timestamp
+    }, results.map(_ => _.timestamp))
 
     const ids = new Set(this.messages.map(it => it.id))
 
-    this.messages.unshift(...messages
+    this.messages.unshift(...results
       .filter(msg => !ids.has(msg.id))
     )
   }
   
-  showLast = (delay?: number) => setTimeout(
-    () => this.scrollable.current?.showLast(),
-    delay // the view might not be ready/updated immediately
+  showLast = () => setTimeout(
+    () => this.scrollable.current?.showLast()
+    // setTimeout is needed so mobx reaction finishes updating view
   )
   
   componentDidMount(): void {
-    this.showLast(500)
-
     this.unsubscribe = this.props.onMessage(msg => {
       this.messages.push(msg)
       this.showLast()
@@ -155,10 +161,10 @@ const makeDefaultProps = ({ correspondenceId: userId }: RouteProps): ChatProps =
 
   return {
     async loadHistory(beforeTs?: number, limit?: number) {
-      const { messages, hasMore } = await api.loadChatHistory(userId, limit, beforeTs)
+      const { results, hasMore } = await api.loadChatHistory(userId, limit, beforeTs)
 
       return {
-        messages: messages.map(mapMessage),
+        results: results.map(mapMessage),
         hasMore
       }
     },
