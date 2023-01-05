@@ -2,11 +2,11 @@ import React from 'react'
 import { observable } from 'mobx'
 import styled from 'styled-components'
 
-import Scrollable, { type Controller as ScrollableVM } from '../../client/components/Scrollable'
+import Scrollable from '../../client/components/Scrollable'
 import Conversation from '../../client/components/Conversation'
 import { type Message } from '../../client/components/Message'
 import { PropsOf, useAction, withDefaults, withRouteQuery } from '../../client/lib'
-import { api, wsClient } from '../../client/services'
+import { api, pubsub } from '../../client/services'
 import { Message as Msg, Paginated } from '../../client/services/Api'
 import { rounded, verticalBox, withBg } from '../../client/components/ux'
 import Layout from '..'
@@ -71,7 +71,7 @@ class Chat extends React.Component<Props, State> {
   readonly messages = observable.array<Message>()
 
   private unsubscribe?: () => void
-  private scrollable = React.createRef<ScrollableVM>()
+  private scrollable = React.createRef<Scrollable>()
 
   loadHistory = async () => {
     if (this.state.hasMore === false
@@ -85,11 +85,11 @@ class Chat extends React.Component<Props, State> {
     })
 
     const { results } = await query
-    results.reverse()
+    results.sort(({ timestamp: t }, next) => t - next.timestamp)
 
     const existingIds = new Set(this.messages.map(it => it.id))
     this.messages.unshift(...results
-      .filter(msg => !existingIds.has(msg.id))
+      .filter(_ => !existingIds.has(_.id))
     )
   }
   
@@ -129,7 +129,9 @@ class Chat extends React.Component<Props, State> {
       <ChatLayout>
         <Scrollable
           ref={this.scrollable}
-          onScrollToTop={this.loadHistory}
+          scrollToTop={{
+            handler: this.loadHistory
+          }}
         >
           <span style={{ margin: 'auto' }} onClick={this.loadHistory}>
             {this.state.hasMore === true && 'more...'}
@@ -183,7 +185,7 @@ const makeDefaultProps = ({ correspondenceId: userId }: RouteProps): Props => {
       await api.send(userId, msg)
     },
 
-    onMessage: handler => wsClient.on('message', msg => {
+    onMessage: handler => pubsub.on('message', msg => {
       if ([msg.sender, msg.receiver].includes(userId)) handler(mapMessage(msg))
     })
   }

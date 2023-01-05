@@ -3,8 +3,8 @@
  * knex's CLI, and a module that export a knex instance
  * corresponding to the environment
  */
-import config from '../config'
-import knex, { type Knex } from 'knex'
+
+import knex, { Knex } from 'knex'
 
 const production = {
   client: 'postgresql',
@@ -13,22 +13,30 @@ const production = {
     database: 'postgres',
     user:     'postgres',
     password: 'postgres'
-  }
+  } as Knex.PgConnectionConfig
 }
 
 const byEnv = {
-  development: production,
   production,
+  development: {
+    ...production,
+    connection: {
+      ...production.connection,
+      host: 'localhost'  
+    }
+  },
   test: {
     ...production,
     connection: {
       ...production.connection,
-      host: 'localhost'
-    }
+      database: 'test'
+    },
+    seeds: { directory: 'dummy' },
   }
-}
+} satisfies NodeJS.Dict<Knex.Config>
 
-const { client, connection }: typeof production = byEnv[config.env]
+import config from '../config'
+const { client, connection } = byEnv[config.env]
 
 import env from './config'
 for (const key in env) {
@@ -37,10 +45,16 @@ for (const key in env) {
   if (value) connection[key] = value
 }
 
-export const db = Object.assign(
-  (): Knex => knex({ client, connection }),
-  connection
-)
+const createConnector = () => {
+  const db = { client, connection }
+  let instance: Knex
+
+  return Object.assign(
+    () => instance || (instance = knex(db)),
+    db
+  )
+}
+
+export const connect = createConnector()
 
 export default byEnv
-

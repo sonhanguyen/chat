@@ -1,20 +1,37 @@
 export default class HttpService {
-  constructor(
-    private getAuthToken: () => string | void,
-  ) {}
+  constructor(readonly config = {} as {
+    getAuthToken?: () => string | void,
+    baseUrl?: string
+  }) {}
 
-  fetch = <T>(url: string, options: RequestInit = {}): Promise<T> => {
-    if (!url.startsWith('http')) {
-      const Authorization = this.getAuthToken()
+  fetch = <T>(url: string, { ...options }: Omit<RequestInit, 'body'> & {
+    body?: RequestInit['body'] | object
+  } = {}): Promise<T> => {
+    const { body, headers } = options
 
-      if (Authorization) options.headers = {
-        ...options.headers,
-        'Content-Type': 'application/json',
-        Authorization
-      }
+    const CONTENT_TYPE = 'Content-Type:application/json'
+    const [ ContentType , contentType ] = Object.entries(headers || {})
+      .find(([ header ]) => RegExp(`^${header}:`, 'i').test(CONTENT_TYPE))
+      || CONTENT_TYPE.split(':')
+
+    if (contentType?.endsWith('/json') && typeof body != 'string') {
+      options.body = JSON.stringify(body)
     }
 
-    return fetch(url, options)
+    if (!url.includes('://')) {
+      const { baseUrl, getAuthToken } = this.config
+      
+      if (baseUrl) url = baseUrl + url 
+      var Authorization = getAuthToken?.() 
+    }
+
+    options.headers = {
+      ...Authorization && { Authorization },
+      ...headers,
+      [ContentType]: contentType
+    }
+
+    return fetch(url, options as RequestInit)
       .then(res => res.ok ? res.json() : Promise.reject(res)) as any
   }
 }

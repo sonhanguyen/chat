@@ -1,14 +1,13 @@
 import config from '../config'
-import Messages from '../dal/entities/Messages'
-import Users from '../dal/entities/Users'
-import { makeMiddleware as makeAuthenticator } from './auth'
-export { PushServer as WSServer } from './PushServer'
+import { makeMiddleware } from './auth'
+export { PushServer, makeMiddleware as socketIoMiddleware } from './PushServer'
 
-export const users = new Users
-export const messages = new Messages
+import { users, messages } from '../dal/entities'
+
+export { users, messages }
 
 export const middlewares = {
-  auth: makeAuthenticator(
+  auth: makeMiddleware(
     (id: string) => users.byId(id),
     config.jwtKey
   )

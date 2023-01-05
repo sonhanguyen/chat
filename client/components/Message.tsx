@@ -17,7 +17,7 @@ export type Props = Message & {
   right?: boolean
 }
 
-const Message: React.FunctionComponent<Props> = ({ className, body, sender, timestamp }) => {
+const Message: React.FC<Props> = ({ className, body, sender, timestamp }) => {
   return <div className={className}>
     <Body bg={ sender.isMe? 'inactive' : 'active' }>{body}</Body>
     <Time>{relativeTime(timestamp)}</Time>

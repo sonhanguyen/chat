@@ -1,6 +1,6 @@
 import { RequestHandler } from 'express'
 import http from 'http'
-import SocketIO, { Socket } from 'socket.io'
+import SocketIO from 'socket.io'
 import { ExtendedError } from 'socket.io/dist/namespace'
 import { Handshake } from 'socket.io/dist/socket'
 import { Message } from '../api/messages'
@@ -12,35 +12,41 @@ export type Payload = {
 }
 
 export class PushServer {
-  readonly io: SocketIO.Server
+  readonly pubsub?: SocketIO.Server
+  readonly connected = new Set<User['id']>
 
-  constructor(
-    server: http.Server, 
-    ...middlewares: {
-      (_: Socket, next: (_?: ExtendedError) => void): void 
-    }[]
-  ) {
-    this.io = new SocketIO.Server(server, {
+  start(options: Partial<SocketIO.ServerOptions> & {
+    server: http.Server
+  }, ...middlewares: {
+    (_: SocketIO.Socket, next: (_?: ExtendedError) => void): void 
+  }[]) {
+    (this.pubsub as SocketIO.Server) = new SocketIO.Server(options.server, {
       cors: { origin: '*' }
     })
 
     middlewares.forEach(middleware =>
-      this.io.use(middleware)
+      this.pubsub?.use(middleware)
     )
 
-    this.io.on('connection', socket => {
+    this.pubsub?.on('connection', socket => {
       const { user } = socket.handshake as Handshake & { 
         user: User
       }
 
       socket.broadcast.emit('user', { ...user, connected: true })
 
-      // put all sockets from the same user into the same broadcasting room
-      socket.join(user.id)
+      const { id } = user
+      this.connected.add(id)
 
+      // put all sockets from the same user into the same broadcasting room
+      socket.join(id)
+      
       socket.on('disconnect', () => {
-        const connections = this.io.sockets.adapter.rooms.get(user.id)
-        if (!connections?.size) this.io.emit('user', { ...user, connected: false })
+        const connections = this.pubsub?.sockets.adapter.rooms.get(id)
+        if (!connections?.size) {
+          this.pubsub?.emit('user', { ...user, connected: false })
+          this.connected.delete(id)
+        }
       })
     })
   }
@@ -50,11 +56,16 @@ export class PushServer {
     event: T,
     payload: Payload[T]
   ) {
-    return this.io.in(room).emit(event, payload)
+    return this.pubsub?.in(room).emit(event, payload)
+  }
+
+  stop() {
+    this.pubsub?.close()
+    this.pubsub?.sockets.disconnectSockets()
   }
 }
 
-export const makeMidleware = (middleware: RequestHandler<any, any>) =>
+export const makeMiddleware = (middleware: RequestHandler<any, any>) =>
 ({ request, handshake }: any, next: (err?: any) => void) =>
   middleware(handshake || request, {} as any, next as any)
 

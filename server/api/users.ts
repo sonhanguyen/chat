@@ -17,14 +17,9 @@ export default Router()
   .get('/me', async (req, res) => res.json(req.user))
   .get('/', async (_, res) => {
     const all = await users.all()
-
-    // get the broadcasting rooms for each users
-    const { rooms = new Map<string, Set<string>>() } =
-      server.socket?.io.sockets.adapter || {}
   
-    all.forEach((user: User) => {
-      // user is connected if there is at least one socket.io client
-      user.connected = Boolean(rooms.get(user.id)?.size)
-    })
+    all.forEach((user: User) =>
+      user.connected = server.push?.connected.has(user.id)
+    )
     res.json(all)
   })

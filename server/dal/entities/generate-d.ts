@@ -1,13 +1,13 @@
 import { generate } from 'zapatos/generate';
-import { db } from '../knexfile'
+import { connect } from '../knexfile'
 import { exec } from 'child_process'
 import { join } from 'path'
 
 const outDir = __dirname
 
 generate({
-  db,
   outDir,
+  db: connect.connection,
   schemas: {
     public: {
       include: [ 'User', 'Message' ],
@@ -16,5 +16,5 @@ generate({
   }
 }).then(() => {
   const dir = join(outDir, 'zapatos')
-  exec(`mv ${join(dir, 'schema.d.ts')} ${outDir} && rm -rf ${dir}`)
+  return exec(`mv ${join(dir, 'schema.d.ts')} ${outDir} && rm -rf ${dir}`)
 })

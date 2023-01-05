@@ -1,7 +1,6 @@
 
-// @ts-ignore knex cli complains here for whatever reason
+import { Knex } from 'knex'
 import { User } from 'zapatos/schema'
-import { db as database } from '../knexfile'
 
 const User = ({ password, ...user }: User.Selectable) =>
   user as Omit<User.Selectable, 'password'>
@@ -12,17 +11,17 @@ export default class Users {
   static TABLE = 'User' satisfies User.Table
 
   constructor(
-    private db = database()
+    private db: () => Knex
   ) { }
 
   async all() {
-    const users = await this.db(Users.TABLE).select()
+    const users = await this.db()(Users.TABLE).select()
 
     return users.map(User)
   }
 
   async byId(id: string) {
-    const { rows: [ user ] } = await this.db.raw(`
+    const { rows: [ user ] } = await this.db().raw(`
       SELECT * FROM "${Users.TABLE}" WHERE id = ?
     `, [ id ])
 
@@ -30,7 +29,7 @@ export default class Users {
   }
 
   async byCredential(username: string, password: string) {
-    const { rows: [ user ] } = await this.db.raw(`
+    const { rows: [ user ] } = await this.db().raw(`
       SELECT *, (password = crypt(:password, password)) AS match
       FROM "${Users.TABLE}"
       WHERE username = :username
@@ -47,7 +46,7 @@ export default class Users {
     username: string,
     password: string
   ) {
-    const created = await this.db.raw(`
+    const { rows: [ created ] } = await this.db().raw(`
       INSERT INTO "${Users.TABLE}" (
         name, username, password
       )

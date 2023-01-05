@@ -1,6 +1,5 @@
-import { db as database } from '../knexfile'
-// @ts-ignore knex cli complains here for whatever reason
 import { Message } from 'zapatos/schema'
+import { Knex } from 'knex'
 
 function Message({ utc_time, ...msg }: Message.Selectable) {
   return { ...msg, timestamp: utc_time.getTime() }
@@ -13,7 +12,7 @@ export default class Messages {
   static TABLE = 'Message' satisfies Message.Table
 
   constructor(
-    private db = database()
+    private db: () => Knex
   ) { }
 
   async byParticipants({ users, limit, before }: {
@@ -22,7 +21,7 @@ export default class Messages {
     limit?: number
   }): Promise<Paginated> {
     const participants = 'sender = ? AND receiver = ?'
-    const query = this.db(Messages.TABLE)
+    const query = this.db()(Messages.TABLE)
       .select()
       .where(_ => _
         .whereRaw(participants, users)
@@ -52,7 +51,7 @@ export default class Messages {
     sender: string,
     receiver: string
   ) {
-    const { rows: [ created ] } = await this.db.raw(`
+    const { rows: [ created ] } = await this.db().raw(`
       INSERT INTO "${Messages.TABLE}" (
         body, sender, receiver
       ) VALUES (?, ?, ?)

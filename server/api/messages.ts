@@ -20,12 +20,12 @@ export default Router()
     const message = await messages.create(body, from, to)
     
     /// broadcast to connected clients of both sender & receiver
-    server.socket?.emit(to, 'message', message)
-    server.socket?.emit(from, 'message', message)
+    server.push?.emit(to, 'message', message)
+    server.push?.emit(from, 'message', message)
 
     // TODO:
     // a way to associate req with the socket id, to exclude it
     // from the broadcasting (being from the specific client that sent)
 
-    res.send(message)
+    res.json(message)
   })

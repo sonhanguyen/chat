@@ -6,28 +6,28 @@ type-gen() {
 }
 
 db() {
-  knex "${@:1}"
+  knex $@
 }
+
 
 migrate() {
   echo 'starting migration..'
-  knex migrate:latest || { exit 1; }
+  knex migrate:latest || exit $?
   echo 'generating typescript definition for entities..'
-  type-gen || { exit 1; }
+  type-gen
 }
 
 print-db() {
-  ts-node -T <<'EOF'
-    import { db } from './knexfile'
-    console.log(`${db.host}:${db.port}`)
+  node -r ts-node/register/transpile-only <<'EOF'
+  const { connect: { connection: db } } = require('./knexfile')
+  console.log(`${db.host}:${db.port}`)
 EOF
 }
 
 init() {
-  wait-for-it `print-db` || { exit 1; }
-  migrate
-  echo 'seeding db..'
-  knex seed:run
+  wait-for-it `print-db`
+  migrate || exit $?
+  knex seed:run || true
 }
 
 --help() {
@@ -35,4 +35,4 @@ init() {
   compgen -A function | cat -n
 }
 
-"$@"
+${@:-'--help'}

@@ -16,22 +16,33 @@ const useScrollHandler = (onScrollToTop: () => void, threshold = 10) => {
   return onScroll
 }
 
-export type Controller = { showLast(): void }
+type Scrollable = { showLast(): void }
 
 type ScrollableProps = {
   children?: React.ReactNode
-  onScrollToTop?(): void
   className?: string
+
+  scrollToTop?: {
+    threshold?: number
+    handler(): void
+  }
 }
 
 export const Scrollable = styled(
-  React.forwardRef<Controller, ScrollableProps>(
-    ({ children, className, onScrollToTop = () => {} }, ref) => {
+  React.forwardRef<Scrollable, ScrollableProps>(
+    ({
+      children,
+      className,
+      scrollToTop: {
+        handler = () => {},
+        threshold
+      } = {},
+    }, ref) => {
       const onMountEvent = ref && ((mounted: HTMLDivElement | null) => {
-        const refFunc = typeof ref === 'function' ? ref
-          : (it: typeof ref['current']) => ref.current = it
+        const refCallback = typeof ref === 'function' ? ref
+          : (it: typeof ref.current) => ref.current = it
 
-        refFunc(mounted && {
+        refCallback(mounted && {
           showLast() {
             mounted.scrollTop = mounted.scrollHeight
           }
@@ -40,7 +51,7 @@ export const Scrollable = styled(
 
       return <div
         className={className}
-        onScroll={useScrollHandler(onScrollToTop)}
+        onScroll={useScrollHandler(handler, threshold)}
         ref={onMountEvent}
       >
         {children}

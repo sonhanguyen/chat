@@ -6,7 +6,7 @@ import { type Knex } from 'knex';
 import { randPhrase, randNumber, randRecentDate, randBoolean, rand } from '@ngneat/falso'
 
 export async function seed(knex: Knex): Promise<void> {
-  const users = (await new Users(knex).all()).map(it => it.id)
+  const users = (await new Users(() => knex).all()).map(it => it.id)
 
   await knex(Messages.TABLE).del()
 
