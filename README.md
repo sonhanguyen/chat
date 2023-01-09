@@ -27,7 +27,7 @@ Check the `seeds` directory for the credentials to use. As this reuses the same 
 ## Develop locally
 Requirements
 - nodejs
-- don't need `postgres` if you use the `docker-compose` service, to connect to `postgres` running on `localhost` do `DB_HOST=localhost ./cmd run`.
+- don't need `postgres` if you use the `docker-compose` service, to connect to `postgres` running on `localhost` do `./cmd --local run`.
 
 For more commands, run `./cmd`, check out the 2 `config.ts` for list of env variables
 

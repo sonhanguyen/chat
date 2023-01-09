@@ -1,5 +1,5 @@
 import assert from 'node:assert'
-import { describe, before, test, after } from 'node:test'
+import { describe, before, test } from 'node:test'
 import { type RequestMethod } from 'pactum/src/exports/mock'
 import { spec } from 'pactum'
 import Users from '../dal/entities/Users'
@@ -11,7 +11,7 @@ import { Payload } from '../services/PushServer'
 import { Message } from '../api/messages'
 
 describe(__filename, async _ => {
-  after(async _ => {
+  before(async _ => {
     const db = connect()
     await db(Users.TABLE).del()
     await db.destroy()
@@ -176,7 +176,8 @@ describe(__filename, async _ => {
     pubsub[1] = new PubSub(() => token1)
     await pubsub[1].connect()
     
-    const sent = once('message', pubsub[1])
+    const sent = once('message', pubsub[0])
+    const received = once('message', pubsub[2])
     const expected = { sender: user1, receiver: user2, body: 'haha' }
 
     const message = await spec().post('/api/messages')
@@ -187,14 +188,20 @@ describe(__filename, async _ => {
       .returns('')
 
     assert.deepEqual(
-      await sent,
+      await received,
       message,
       'should notify receiver on incomming message'
     )
 
-    const results = [ message ]
+    assert.deepEqual(
+      await sent,
+      message,
+      'should notify sender in another client on sent message'
+    )
 
-    await _.test('/api/messages/conversation', async _ => {
+    await _.test('GET /api/messages/conversation', async _ => {
+      const results = [ message ]
+      
       await spec().get('/api/messages/conversation?withUser=' + user2)
         .withHeaders('authorization', token1)
         .expectStatus(200)
@@ -211,48 +218,47 @@ describe(__filename, async _ => {
         .returns('')
       )
 
-      await spec().get('/api/messages/conversation?withUser=' + user2)
-        .withHeaders('authorization', token1)
-        .expectStatus(200)
-        .expectJsonLike({
-          hasMore: false,
-          results
-        })
-    })
-    let page: Message[]
-    await _.test('with "limit"', async _ => {
-      const limit = 1
-      page = results.slice(-limit)
-      await spec().get(`/api/messages/conversation?limit=${limit}&withUser=` + user2)
-        .withHeaders('authorization', token1)
-        .expectStatus(200)
-        .expectJsonLike({
-          hasMore: true,
-          results: page
-        })
-    })
-
-    await _.test('with "before"', async _ => {
-      const limit = 1
-      await spec().get(`/api/messages/conversation?before=${
-        page.pop()?.timestamp
-      }&limit=${limit}&withUser=` + user2)
-        .withHeaders('authorization', token1)
-        .expectStatus(200)
-        .expectJsonLike({
-          hasMore: false,
-          results: [ message ]
-        })
+      let page: Message[]
+      await _.test('with "limit"', async _ => {
+        const limit = 1
+        page = results.slice(-limit)
+        await spec().get(`/api/messages/conversation?limit=${limit}&withUser=` + user2)
+          .withHeaders('authorization', token1)
+          .expectStatus(200)
+          .expectJsonLike({
+            hasMore: true,
+            results: page
+          })
+      })
+  
+      await _.test('with "before"', async _ => {
+        const limit = 1
+        await spec().get(`/api/messages/conversation?before=${
+          page.pop()?.timestamp
+        }&limit=${limit}&withUser=` + user2)
+          .withHeaders('authorization', token1)
+          .expectStatus(200)
+          .expectJsonLike({
+            hasMore: false,
+            results: [ message ]
+          })
+      })      
     })
   })
 })
 
 function once<E extends keyof Payload>(event: E, socket: PubSub, timeout = 500) {
   return new Promise<Payload[E]>((resolve, reject) => {
-    const unsubscribe = socket.on(event, status => {
-      resolve(status)
-      unsubscribe()
-    })
-    setTimeout(reject, timeout)
+    try {
+      const unsubscribe = socket.on(event, payload => {
+        resolve(payload)
+        unsubscribe()
+      })
+
+      setTimeout(
+        () => reject(`${timeout}ms timed out when waiting for ${event} event`),
+        timeout
+      )
+    } catch (error) { reject(error) }
   })
 }

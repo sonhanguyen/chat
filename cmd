@@ -1,5 +1,6 @@
 #!/bin/bash
 PATH=./node_modules/.bin:$PATH
+node="node -r ts-node/register/transpile-only"
 
 e2e() {
   set -a
@@ -15,7 +16,7 @@ e2e() {
   bash -c 'cd server/dal && ./cmd init --create-db' || exit $?
   
   run --fork "wait-for-it $BASE_URL && $node --test `
-    find . ${@:--name *.spec.ts} ! -path '*node_modules*'` $tests
+    find . ${@:--name *.spec.ts} ! -path '*node_modules*'`
   "
 }
 
@@ -66,7 +67,5 @@ start() {
   echo "commands:"
   compgen -A function | cat -n
 }
-
-node="node -r ts-node/register/transpile-only"
 
 ${@:-'--help'}
