@@ -1,7 +1,7 @@
 #!/bin/bash
 PATH=./node_modules/.bin:$PATH
 
-test() {
+e2e() {
   set -a
   source .env
   NODE_ENV=test
@@ -9,39 +9,33 @@ test() {
   PORT=$((PORT + 1))
   BASE_URL=127.0.0.1:$PORT
   PACTUM_REQUEST_BASE_URL=http://$BASE_URL
+  # DEBUG=socket.io-client
   set +a
 
-  bash -c 'cd server/dal && ./cmd init --create-db' || exit 1
+  bash -c 'cd server/dal && ./cmd init --create-db' || exit $?
   
-  run --fork "
-    wait-for-it $BASE_URL &&
-    node $watch $tests -r ts-node/register/transpile-only --test `
-      find . ${@:--name *.spec.ts} ! -path '*node_modules*'`
+  run --fork "wait-for-it $BASE_URL && $node --test `
+    find . ${@:--name *.spec.ts} ! -path '*node_modules*'` $tests
   "
 }
 
 run() {
-  server="node $watch -r ts-node/register/transpile-only server"
-
-  [[ $watch ]] && echo starting server in watch mode..
-  
-  [[ $1 == --fork ]] && cmd=${@:2}
-
-  clean() {
+  quit() {
+    rv=${1:-$?}
     kill $server
-    exit
+    exit $rv
   }
 
-  echo $server
-
-  if [[ $cmd ]]; then
-    $server&
-    server=$!
-    trap clean INT TERM EXIT
-    
-    bash -c "$cmd"
-  else $server
+  if [[ $1 == --fork ]]; then cmd=$2
+  else
+    $node server
+    quit
   fi
+
+  trap quit INT TERM EXIT
+  $node server&
+  server=$!
+  bash -c "$cmd"
 }
 
 start() {
@@ -73,15 +67,6 @@ start() {
   compgen -A function | cat -n
 }
 
-for arg in "$@"; do shift
-  case "$arg"
-  in "$skip")  skip=
-  ;; -h|--help) --help
-  ;; --fork)   cmd=$1; skip=$1
-  ;; --watch) watch=--watch # note that --test and --watch only work together from nodejs 19
-  ;; --name)  tests=--test-name-pattern=$1; skip=$1
-  ;; *)         set -- $@ $arg
-  esac
-done
+node="node -r ts-node/register/transpile-only"
 
 ${@:-'--help'}

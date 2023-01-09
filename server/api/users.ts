@@ -17,7 +17,6 @@ export default Router()
   .get('/me', async (req, res) => res.json(req.user))
   .get('/', async (_, res) => {
     const all = await users.all()
-  
     all.forEach((user: User) =>
       user.connected = server.push?.connected.has(user.id)
     )

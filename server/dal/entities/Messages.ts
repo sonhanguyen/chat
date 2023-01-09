@@ -1,3 +1,4 @@
+// @ts-ignore ts-node error TS2307: Cannot find module 'zapatos/schema' or its corresponding type declarations
 import { Message } from 'zapatos/schema'
 import { Knex } from 'knex'
 

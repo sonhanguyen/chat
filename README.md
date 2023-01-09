@@ -16,20 +16,20 @@ Extras Items:
 
 - [x] "Liveness" - the system should be able to tell if the user is active (based on the liveliness of the socket.io connection)
 - [x] Infinite Scroll of Messages in a Conversation
-- [ ] Didn't have time to do test but inversion of control is followed in both front and back end (those `index.ts` are composition roots), so it should be easy to unit test
+- [x] I only had time for API e2e tests (`./cmd --local e2e`). However, inversion of control is followed in both front and back end (those `index.ts` are composition roots), so it should be easy to unit test.
 
 ## Run
 
 `docker-compose up`
 
-Check the `seeds` directory for the credentials to use. As this reuses the same token across tabs you've have to login as different users on incognito or another browser to test.
+Check the `seeds` directory for the credentials to use. As this reuses the same token across tabs you'll have to login as different users on incognito or another browser to test.
 
 ## Develop locally
 Requirements
 - nodejs
 - don't need `postgres` if you use the `docker-compose` service, to connect to `postgres` running on `localhost` do `DB_HOST=localhost ./cmd run`.
 
-For more commands, look up the files called `cmd` (2 of them, one for Data Access Layer). And check out the 2 `config.ts` for list of env variables
+For more commands, run `./cmd`, check out the 2 `config.ts` for list of env variables
 
 ## Technical details
 

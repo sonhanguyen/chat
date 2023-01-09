@@ -9,10 +9,11 @@ export default class HttpService {
   } = {}): Promise<T> => {
     const { body, headers } = options
 
-    const CONTENT_TYPE = 'Content-Type:application/json'
-    const [ ContentType , contentType ] = Object.entries(headers || {})
-      .find(([ header ]) => RegExp(`^${header}:`, 'i').test(CONTENT_TYPE))
-      || CONTENT_TYPE.split(':')
+    const CONTENT_TYPE = { 'Content-Type': 'application/json'}
+    const [ ContentType , contentType ] = Object
+      .entries({ ...headers, ...CONTENT_TYPE })
+      .find(([ header ]) =>
+        RegExp(`^${Object.keys(CONTENT_TYPE)}$`, 'i').test(header))!
 
     if (contentType?.endsWith('/json') && typeof body != 'string') {
       options.body = JSON.stringify(body)

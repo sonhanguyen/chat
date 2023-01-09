@@ -9,6 +9,9 @@ db() {
   knex $@
 }
 
+create-db() {
+  ts-node -T reset-db
+}
 
 migrate() {
   echo 'starting migration..'
@@ -18,7 +21,7 @@ migrate() {
 }
 
 print-db() {
-  node -r ts-node/register/transpile-only <<'EOF'
+  ts-node -T <<'EOF'
   const { connect: { connection: db } } = require('./knexfile')
   console.log(`${db.host}:${db.port}`)
 EOF
@@ -26,6 +29,9 @@ EOF
 
 init() {
   wait-for-it `print-db`
+
+  [[ $1 == --create-db ]] && (create-db || exit $?)
+
   migrate || exit $?
   knex seed:run || true
 }

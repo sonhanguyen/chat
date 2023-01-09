@@ -22,7 +22,7 @@ const byEnv = {
     ...production,
     connection: {
       ...production.connection,
-      host: 'localhost'  
+      host: '127.0.0.1'  
     }
   },
   test: {

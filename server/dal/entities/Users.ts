@@ -1,6 +1,6 @@
-
-import { Knex } from 'knex'
+// @ts-ignore ts-node error TS2307: Cannot find module 'zapatos/schema' or its corresponding type declarations
 import { User } from 'zapatos/schema'
+import { Knex } from 'knex'
 
 const User = ({ password, ...user }: User.Selectable) =>
   user as Omit<User.Selectable, 'password'>
